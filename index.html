@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0D1B2A" />
+  <meta name="description" content="Sistema de análisis de contaminación lumínica y astroturismo en Colombia." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <title>Global Illumination Spot</title>
+</head>
+<body>
+
+  <a href="#map" class="skip-link">Saltar al mapa</a>
+
+  <header class="app-header">
+    <div class="header-brand" aria-label="Global Illumination Spot">
+      <span class="brand-icon" aria-hidden="true">✦</span>
+      <span class="brand-name" aria-hidden="true">Global <em>Illumination</em> Spot</span>
+    </div>
+    <div class="header-controls">
+      <div class="search-wrapper">
+        <input type="text" id="search-input" class="search-input" placeholder="Buscar ciudad o lugar..." autocomplete="off" />
+        <button id="search-btn" class="search-btn" aria-label="Buscar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </button>
+        <ul id="search-results" class="search-results" hidden></ul>
+      </div>
+      <button id="geolocate-btn" class="icon-btn" title="Ir a mi ubicación" aria-label="Ir a mi ubicación">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+          <circle cx="12" cy="12" r="9" stroke-dasharray="4 2"/>
+        </svg>
+      </button>
+      <button id="night-mode-btn" class="icon-btn" title="Modo de observación nocturna" aria-label="Activar modo de observación nocturna" aria-pressed="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <button id="install-btn" class="icon-btn" title="Instalar aplicación" aria-label="Instalar aplicación" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+        </svg>
+      </button>
+      <!-- Layer toggle movido al widget de capas en el mapa -->
+    </div>
+  </header>
+
+  <main id="map" tabindex="-1"></main>
+
+  <aside id="side-panel" class="side-panel" aria-hidden="true">
+    <div class="panel-handle" aria-hidden="true"></div>
+    <button id="panel-close" class="panel-close" aria-label="Cerrar panel">✕</button>
+
+    <div class="panel-location">
+      <span class="panel-location-icon">📍</span>
+      <div>
+        <p class="panel-location-name" id="panel-location-name">—</p>
+        <p class="panel-location-region" id="panel-location-region">Colombia</p>
+      </div>
+    </div>
+
+    <div class="success-gauge">
+      <div class="gauge-ring">
+        <svg viewBox="0 0 120 120" class="gauge-svg">
+          <circle class="gauge-track" cx="60" cy="60" r="50"/>
+          <circle class="gauge-fill" id="gauge-fill" cx="60" cy="60" r="50"
+            stroke-dasharray="314" stroke-dashoffset="314"/>
+        </svg>
+        <div class="gauge-label">
+          <span class="mini-spinner" id="gauge-spinner" hidden aria-hidden="true"></span>
+          <span class="gauge-percent" id="gauge-percent">—</span>
+          <span class="gauge-caption">éxito</span>
+        </div>
+      </div>
+      <p class="gauge-verdict" id="gauge-verdict">Selecciona un lugar</p>
+    </div>
+
+    <section class="panel-section">
+      <h3 class="section-title">Condiciones actuales</h3>
+      <div class="conditions-grid">
+        <div class="condition-card">
+          <span class="condition-icon">☁️</span>
+          <span class="condition-label">Nubosidad</span>
+          <span class="condition-value" id="cond-clouds">—</span>
+        </div>
+        <div class="condition-card">
+          <span class="condition-icon">🌙</span>
+          <span class="condition-label">Fase lunar</span>
+          <span class="condition-value" id="cond-moon">—</span>
+        </div>
+        <div class="condition-card">
+          <span class="condition-icon">🌑</span>
+          <span class="condition-label">Bortle</span>
+          <span class="condition-value" id="cond-bortle">—</span>
+        </div>
+        <div class="condition-card">
+          <span class="condition-icon">🌡️</span>
+          <span class="condition-label">Temperatura</span>
+          <span class="condition-value" id="cond-temp">—</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel-section">
+      <h3 class="section-title">Simulador <span class="section-badge">¿Y si...?</span></h3>
+      <div class="slider-group">
+        <label class="slider-label" for="sim-clouds"><span>Nubosidad simulada</span><span class="slider-value" id="sim-clouds-val">50%</span></label>
+        <input type="range" id="sim-clouds" class="slider" min="0" max="100" value="50" />
+      </div>
+      <div class="slider-group">
+        <label class="slider-label" for="sim-bortle"><span>Contaminación lumínica</span><span class="slider-value" id="sim-bortle-val">Bortle 4</span></label>
+        <input type="range" id="sim-bortle" class="slider" min="1" max="9" value="4" />
+      </div>
+      <div class="slider-group">
+        <label class="slider-label" for="sim-moon"><span>Iluminación lunar</span><span class="slider-value" id="sim-moon-val">50%</span></label>
+        <input type="range" id="sim-moon" class="slider" min="0" max="100" value="50" />
+      </div>
+      <div class="sim-result">
+        <span class="sim-result-label">Resultado simulado</span>
+        <span class="sim-result-value" id="sim-result">—</span>
+      </div>
+    </section>
+
+    <section class="panel-section" id="spot-info-section" hidden>
+      <h3 class="section-title">Ficha del sitio</h3>
+      <div id="spot-info-content" class="spot-info-content"></div>
+    </section>
+  </aside>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <div id="app-loader" class="app-loader">
+    <div class="loader-content">
+      <span class="loader-icon">✦</span>
+      <p class="loader-text">Cargando cielos...</p>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/app.js" type="module"></script>
+</body>
+</html>

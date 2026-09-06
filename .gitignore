@@ -1,0 +1,7 @@
+# Credenciales generadas en tiempo de build (ver README y netlify.toml)
+js/config.js
+
+# Sistema operativo / editor
+.DS_Store
+Thumbs.db
+desktop.ini

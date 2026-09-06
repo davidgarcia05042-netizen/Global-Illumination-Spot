@@ -1,0 +1,146 @@
+[
+  {
+    "id": "tatacoa-001",
+    "name": "Desierto de la Tatacoa",
+    "region": "Huila, Colombia",
+    "coordinates": { "lat": 3.2319, "lng": -75.1741 },
+    "altitude_m": 430,
+    "bortle_index": 3,
+    "bortle_source": "World Atlas / medición local",
+    "is_functional": true,
+    "observation_types": ["visual", "fotografía", "exoplanetas", "vía láctea"],
+    "infrastructure": {
+      "observatory": true,
+      "camping": true,
+      "accessibility": "Alta"
+    },
+    "best_months": [6, 7, 8, 12, 1, 2],
+    "description": "Uno de los mejores cielos oscuros de Colombia. El desierto ofrece condiciones excepcionales para la observación astronómica, con baja humedad y escasa nubosidad en temporada seca. Cuenta con observatorio local y zona de acampar."
+  },
+  {
+    "id": "villadleyva-002",
+    "name": "Villa de Leyva",
+    "region": "Boyacá, Colombia",
+    "coordinates": { "lat": 5.6330, "lng": -73.5244 },
+    "altitude_m": 2149,
+    "bortle_index": 4,
+    "bortle_source": "World Atlas",
+    "is_functional": true,
+    "observation_types": ["visual", "fotografía", "planetario"],
+    "infrastructure": {
+      "observatory": true,
+      "camping": false,
+      "accessibility": "Alta"
+    },
+    "best_months": [12, 1, 2, 7, 8],
+    "description": "Ciudad colonial con uno de los observatorios más activos de Colombia. La altitud y el clima seco de la región permiten noches despejadas frecuentes. El Observatorio Astronómico de Villa de Leyva organiza jornadas públicas."
+  },
+  {
+    "id": "chingaza-003",
+    "name": "Parque Nacional Chingaza",
+    "region": "Cundinamarca, Colombia",
+    "coordinates": { "lat": 4.5167, "lng": -73.7500 },
+    "altitude_m": 3200,
+    "bortle_index": 4,
+    "bortle_source": "World Atlas",
+    "is_functional": true,
+    "observation_types": ["visual", "fotografía"],
+    "infrastructure": {
+      "observatory": false,
+      "camping": true,
+      "accessibility": "Media"
+    },
+    "best_months": [12, 1, 2, 3],
+    "description": "Parque de páramo a menos de 2 horas de Bogotá. La alta altitud reduce la densidad atmosférica y, en noches despejadas (temporada seca), ofrece vistas sorprendentes de la Vía Láctea. Requiere permiso de ingreso nocturno."
+  },
+  {
+    "id": "flamencos-004",
+    "name": "Parque Tayrona / Los Flamencos",
+    "region": "Magdalena, Colombia",
+    "coordinates": { "lat": 11.3167, "lng": -73.9833 },
+    "altitude_m": 10,
+    "bortle_index": 3,
+    "bortle_source": "World Atlas",
+    "is_functional": true,
+    "observation_types": ["visual", "fotografía", "vía láctea"],
+    "infrastructure": {
+      "observatory": false,
+      "camping": true,
+      "accessibility": "Media"
+    },
+    "best_months": [12, 1, 2, 3, 4],
+    "description": "La costa caribe ofrece horizontes despejados sobre el mar Caribe con mínima contaminación lumínica. Ideal para fotografía de larga exposición con el océano en primer plano. La temporada seca caribeña coincide con posiciones óptimas de la Vía Láctea."
+  },
+  {
+    "id": "snevada-005",
+    "name": "Sierra Nevada del Cocuy",
+    "region": "Boyacá, Colombia",
+    "coordinates": { "lat": 6.4167, "lng": -72.3333 },
+    "altitude_m": 4500,
+    "bortle_index": 2,
+    "bortle_source": "World Atlas",
+    "is_functional": true,
+    "observation_types": ["visual", "fotografía", "astrofísica"],
+    "infrastructure": {
+      "observatory": false,
+      "camping": true,
+      "accessibility": "Baja"
+    },
+    "best_months": [12, 1, 2],
+    "description": "Uno de los cielos más oscuros de Colombia por su altitud extrema y lejanía de centros urbanos. El frío intenso es un factor limitante pero la calidad del cielo es excepcional. Solo recomendado para observadores experimentados con equipo adecuado."
+  },
+  {
+    "id": "bogota-obs-006",
+    "name": "Observatorio Astronómico Nacional",
+    "region": "Bogotá D.C., Colombia",
+    "coordinates": { "lat": 4.5981, "lng": -74.0761 },
+    "altitude_m": 2600,
+    "bortle_index": 8,
+    "bortle_source": "World Atlas / medición local",
+    "is_functional": false,
+    "observation_types": ["educativo", "planetario"],
+    "infrastructure": {
+      "observatory": true,
+      "camping": false,
+      "accessibility": "Alta"
+    },
+    "best_months": [1, 2, 3, 7, 8, 9],
+    "description": "El observatorio más antiguo de Colombia (1803). Aunque la contaminación lumínica de Bogotá lo hace ineficaz para observación profunda, es un centro educativo activo y punto de referencia histórico para la astronomía nacional. Visitas guiadas disponibles."
+  },
+  {
+    "id": "sanagustin-007",
+    "name": "San Agustín",
+    "region": "Huila, Colombia",
+    "coordinates": { "lat": 1.8869, "lng": -76.2722 },
+    "altitude_m": 1695,
+    "bortle_index": 3,
+    "bortle_source": "World Atlas",
+    "is_functional": true,
+    "observation_types": ["visual", "fotografía", "arqueología astronómica"],
+    "infrastructure": {
+      "observatory": false,
+      "camping": true,
+      "accessibility": "Media"
+    },
+    "best_months": [6, 7, 8, 12, 1],
+    "description": "Región arqueológica con cielos oscuros y un entorno culturalmente rico. La altitud moderada y la lejanía de centros urbanos permiten noches con excelente visibilidad. Combina el astroturismo con el turismo cultural de las estatuas prehispánicas."
+  },
+  {
+    "id": "medellin-obs-008",
+    "name": "Planetario de Medellín",
+    "region": "Antioquia, Colombia",
+    "coordinates": { "lat": 6.2530, "lng": -75.5636 },
+    "altitude_m": 1495,
+    "bortle_index": 7,
+    "bortle_source": "World Atlas",
+    "is_functional": false,
+    "observation_types": ["educativo", "planetario"],
+    "infrastructure": {
+      "observatory": true,
+      "camping": false,
+      "accessibility": "Alta"
+    },
+    "best_months": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    "description": "Centro de divulgación científica en el corazón de Medellín. La contaminación lumínica urbana impide la observación real, pero el planetario ofrece proyecciones del cielo y programas educativos de astronomía durante todo el año."
+  }
+]

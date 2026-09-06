@@ -1,0 +1,19 @@
+# Configuración de despliegue en Netlify.
+#
+# El sitio es estático (sin bundler), pero usamos el "build command" solo
+# para generar js/config.js con las credenciales/URLs sensibles a partir
+# de variables de entorno — así nunca quedan en texto plano en el
+# repositorio (RNF07): la API key de OpenWeatherMap y la URL de teselas
+# de Google Earth Engine (capa de contaminación lumínica).
+#
+# Requiere:
+#   1. El sitio debe estar conectado a este repositorio por Git (no vale
+#      el despliegue por arrastre de carpeta, que no ejecuta build command).
+#   2. Definir las variables de entorno en:
+#      Netlify → Site settings → Environment variables:
+#        - OWM_API_KEY   (openweathermap.org/api)
+#        - GEE_TILE_URL  (code.earthengine.google.com, ver README)
+
+[build]
+  command = "printf \"export const OWM_API_KEY = '%s';\\nexport const GEE_TILE_URL = '%s';\\n\" \"$OWM_API_KEY\" \"$GEE_TILE_URL\" > js/config.js"
+  publish = "."
