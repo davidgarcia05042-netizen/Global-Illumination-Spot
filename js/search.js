@@ -158,8 +158,15 @@ function renderResults(data) {
     return;
   }
 
+  // Nominatim devuelve a veces el mismo lugar como varios objetos OSM (p. ej.
+  // el municipio y su cabecera): se deja el primero de cada nombre + región
+  // mostrados, que es el mejor clasificado
+  const seen = new Set();
   data.forEach((item) => {
     const place = toPlace(item);
+    const key = `${place.name}|${place.region}`;
+    if (seen.has(key)) return;
+    seen.add(key);
     resultsEl.appendChild(buildItem(place, item.display_name));
   });
 
@@ -221,9 +228,10 @@ function buildItem(place, title, onRemove) {
 
   if (onRemove) {
     li.className = 'search-item-recent';
-    const icon = document.createElement('span');
-    icon.className = 'search-item-icon';
-    icon.innerHTML = CLOCK_ICON;
+    // Ojo: no llamarlo "icon", taparía la función icon() de icons.js usada abajo
+    const clock = document.createElement('span');
+    clock.className = 'search-item-icon';
+    clock.innerHTML = CLOCK_ICON;
     const text = document.createElement('span');
     text.className   = 'search-item-text';
     text.textContent = place.name;
@@ -238,7 +246,7 @@ function buildItem(place, title, onRemove) {
       e.stopPropagation();
       onRemove();
     });
-    li.append(icon, text, remove);
+    li.append(clock, text, remove);
   } else {
     li.textContent = place.name;
   }

@@ -785,6 +785,17 @@ html, body {
 .spot-info-key { color: var(--text-secondary); }
 .spot-info-val { font-family: var(--font-display); font-size: 12px; color: var(--text-primary); text-align: right; max-width: 55%; }
 
+/* Fila de texto largo (Descripción): título arriba y alineado a la
+   izquierda como las demás filas, en vez de centrado por align-items */
+.spot-info-row--block { flex-direction: column; align-items: flex-start; gap: 4px; }
+.spot-info-desc {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
 .bortle-badge {
   display: inline-flex;
   align-items: center;
@@ -1038,7 +1049,16 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
   .layer-btn-label { font-size: 9px; }
 }
 
-/* Va después del bloque móvil para ganarle a su transition: bottom */
+/* Escritorio con el panel abierto: el selector se centra en la parte del
+   mapa que queda visible (sin --panel-w), con la misma curva y duración
+   con que entra el panel. Desde 740px: por debajo, el selector (~370px)
+   no cabe junto al panel y se deja centrado como siempre. */
+@media (min-width: 740px) {
+  .layer-switcher { transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  body.panel-open .layer-switcher { left: calc((100% - var(--panel-w)) / 2); }
+}
+
+/* Va después de los bloques móvil y escritorio para ganarles su transition */
 @media (prefers-reduced-motion: reduce) {
   .layer-switcher { transition: none; }
 }
@@ -1099,7 +1119,10 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
 .guide-fab .icon-btn { box-shadow: var(--shadow); }
 @media (max-width: 480px) {
   .guide-btn-header { display: none; }
-  .guide-fab        { display: block; }
+  .guide-fab        { display: block; transition: opacity 0.2s ease, visibility 0.2s; }
+  /* Con el panel abierto, el selector de capas sube sobre el bottom-sheet y
+     taparía el "?": se oculta (también para el teclado) hasta cerrarlo */
+  body.panel-open .guide-fab { opacity: 0; visibility: hidden; }
 }
 
 .guide-dialog {
@@ -1227,6 +1250,40 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
 .guide-content td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); }
 .guide-content th { color: var(--text-primary); font-weight: 600; }
 
+/* Capturas (partials/guide.html): cada <figure> trae la versión oscura y
+   la clara; se muestra solo la del tema activo. Las ocultas con
+   display: none y loading="lazy" ni siquiera se descargan. */
+.guide-figure { margin: 14px 0 6px; }
+.guide-figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);  /* reserva visible mientras carga */
+}
+.guide-figure figcaption {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+/* Con .guide-figure delante para ganarle a ".guide-figure img" */
+.guide-figure .guide-img-light { display: none; }
+html.light-theme .guide-figure .guide-img-dark  { display: none; }
+html.light-theme .guide-figure .guide-img-light { display: block; }
+
+/* Dos capturas lado a lado (Mapa/Satélite, panel computador/celular) */
+.guide-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+  align-items: flex-start;
+}
+.guide-figures .guide-figure { flex: 1 1 220px; min-width: 0; }
+/* Capturas altas: más angostas para no ocupar varias pantallas */
+.guide-figures--tall .guide-figure { flex: 0 1 200px; }
+
 .guide-status { padding: 48px 0; text-align: center; color: var(--text-secondary); }
 .guide-retry {
   margin-top: 14px;
@@ -1284,5 +1341,6 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
 @media (prefers-reduced-motion: reduce) {
   .guide-dialog[open],
   .guide-dialog::backdrop { animation: none; }
-  .guide-toc-link        { transition: none; }
+  .guide-toc-link,
+  .guide-fab             { transition: none; }
 }

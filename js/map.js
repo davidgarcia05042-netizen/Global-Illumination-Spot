@@ -479,11 +479,9 @@ function renderSpotInfo(spot) {
       <span class="spot-info-val"><div class="obs-tags">${tagsHtml}</div></span>
     </div>
     ${spot.description ? `
-    <div class="spot-info-row" style="flex-direction:column;gap:4px;">
+    <div class="spot-info-row spot-info-row--block">
       <span class="spot-info-key">Descripción</span>
-      <span style="font-family:var(--font-body);font-size:11px;color:var(--text-secondary);line-height:1.5;margin-top:4px;">
-        ${spot.description}
-      </span>
+      <span class="spot-info-desc">${spot.description}</span>
     </div>` : ''}
   `;
 }

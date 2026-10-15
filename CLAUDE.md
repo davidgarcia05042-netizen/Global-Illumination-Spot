@@ -14,7 +14,10 @@ No hay bundler, dependencias npm, linter ni tests. Es HTML/CSS/JS estático con 
 python -m http.server 8080        # servir en local (file:// no funciona: módulos ES + Service Worker)
 node --check js/<archivo>.js      # verificación rápida de sintaxis
 python scripts/generate_icons.py  # regenerar assets/icons/ (requiere Pillow)
+python scripts/capture_guide.py   # regenerar assets/guide/ (requiere playwright y el servidor local)
 ```
+
+Las capturas de la guía (RF13) usan datos fijos (clima, fecha de luna nueva, ubicación en Tunja) para ser reproducibles; ver el docstring del script. Si se agregan o quitan imágenes, actualizar `partials/guide.html` y `PRECACHE_ASSETS`.
 
 `.vscode/launch.json` lanza Chrome contra `http://localhost:8080`.
 

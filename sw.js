@@ -14,7 +14,7 @@
  * subpath (ej. GitHub Pages tipo usuario.github.io/repo/).
  */
 
-const CACHE_NAME = 'gis-v2.2';
+const CACHE_NAME = 'gis-v2.3';
 
 // Archivos críticos precargados en la instalación del SW.
 // Estos estarán disponibles sin internet desde el primer uso.
@@ -35,6 +35,42 @@ const PRECACHE_ASSETS = [
   './js/theme.js',
   './js/guide.js',
   './partials/guide.html',
+  // Capturas de la guía de uso (RF13), para que se vea completa sin conexión
+  './assets/guide/buscador-dark.webp',
+  './assets/guide/buscador-light.webp',
+  './assets/guide/capas-contaminacion-dark.webp',
+  './assets/guide/capas-contaminacion-light.webp',
+  './assets/guide/capas-mapa-dark.webp',
+  './assets/guide/capas-mapa-light.webp',
+  './assets/guide/capas-nubosidad-dark.webp',
+  './assets/guide/capas-nubosidad-light.webp',
+  './assets/guide/capas-satelite-dark.webp',
+  './assets/guide/capas-satelite-light.webp',
+  './assets/guide/condiciones-dark.webp',
+  './assets/guide/condiciones-light.webp',
+  './assets/guide/ficha-dark.webp',
+  './assets/guide/ficha-light.webp',
+  './assets/guide/guia-boton-dark.webp',
+  './assets/guide/guia-boton-light.webp',
+  './assets/guide/instalar-dark.webp',
+  './assets/guide/instalar-light.webp',
+  './assets/guide/mapa-dark.webp',
+  './assets/guide/mapa-light.webp',
+  './assets/guide/marcadores-dark.webp',
+  './assets/guide/marcadores-light.webp',
+  './assets/guide/movil-dark.webp',
+  './assets/guide/movil-light.webp',
+  './assets/guide/panel-dark.webp',
+  './assets/guide/panel-light.webp',
+  './assets/guide/pin-dark.webp',
+  './assets/guide/pin-light.webp',
+  './assets/guide/recientes-dark.webp',
+  './assets/guide/recientes-light.webp',
+  './assets/guide/simulador-dark.webp',
+  './assets/guide/simulador-light.webp',
+  './assets/guide/tema.webp',
+  './assets/guide/ubicacion-dark.webp',
+  './assets/guide/ubicacion-light.webp',
   './js/config.js',
   './data/spots.json',
   './assets/icons/icon-192.png',
