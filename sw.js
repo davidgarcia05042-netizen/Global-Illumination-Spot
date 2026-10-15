@@ -14,7 +14,7 @@
  * subpath (ej. GitHub Pages tipo usuario.github.io/repo/).
  */
 
-const CACHE_NAME = 'gis-v2.1';
+const CACHE_NAME = 'gis-v2.2';
 
 // Archivos críticos precargados en la instalación del SW.
 // Estos estarán disponibles sin internet desde el primer uso.

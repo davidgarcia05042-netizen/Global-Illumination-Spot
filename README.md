@@ -16,6 +16,7 @@ global-illumination-spot/
 │                          incluye la paleta del tema claro
 ├── js/
 │   ├── app.js           → Coordinador principal — importa y conecta todos los módulos
+│   ├── icons.js         → Iconos Lucide como SVG inline (sin CDN, disponibles offline)
 │   ├── map.js            → Mapa Leaflet, selector de capas, panel lateral, gauge, toasts
 │   ├── markers.js        → Carga spots.json y pinta marcadores en el mapa
 │   ├── search.js         → Buscador de ubicaciones via Nominatim (OpenStreetMap)
@@ -46,6 +47,22 @@ python -m http.server 8080
 
 y abrir http://localhost:8080 (es el mismo puerto que usa la configuración
 de depuración de `.vscode/launch.json`).
+
+> **¿No ves las animaciones?** La app respeta la preferencia del sistema
+> de reducir el movimiento (`prefers-reduced-motion`): si en Windows están
+> apagados los *Efectos de animación* (Configuración → Accesibilidad →
+> Efectos visuales), Chrome se lo informa a la página y todas las
+> animaciones se desactivan a propósito. Para verlas sin cambiar el
+> sistema, abre una ventana aparte de Chrome con:
+>
+> ```
+> "C:\Program Files\Google\Chrome\Application\chrome.exe" --user-data-dir="%TEMP%\chrome-animaciones" --force-prefers-no-reduced-motion http://localhost:8080
+> ```
+>
+> El perfil aparte (`--user-data-dir`) es necesario porque el flag se
+> ignora si Chrome ya está abierto, y de paso evita la caché vieja del
+> Service Worker. En algunas versiones de Chrome, DevTools → Rendering
+> solo permite emular `reduce`, no lo contrario.
 
 ## Configuración antes de desplegar
 
@@ -146,8 +163,8 @@ Requiere Python 3 y Pillow (`pip install pillow`). Genera `icon-192.png`,
 3. Definir las variables de entorno `OWM_API_KEY` y `GEE_TILE_URL` (ver sección anterior)
 4. Netlify detecta `netlify.toml`, ejecuta el build command y publica con HTTPS automático
 
-> **En cada nueva versión** cambiar `CACHE_NAME` en `sw.js` (ej. `gis-v2.1`
-> → `gis-v2.2`). Así el Service Worker se reinstala, borra la caché
+> **En cada nueva versión** cambiar `CACHE_NAME` en `sw.js` (ej. `gis-v2.2`
+> → `gis-v2.3`). Así el Service Worker se reinstala, borra la caché
 > anterior y los usuarios que ya instalaron la PWA reciben los archivos
 > nuevos.
 
@@ -273,3 +290,8 @@ Origen de cada dato:
 - **Uso sin conexión:** el Service Worker precachea la app, el catálogo
   de spots y Leaflet (cargado desde unpkg con verificación de integridad
   SRI); las teselas ya vistas quedan disponibles sin señal.
+- **Interfaz animada:** iconos Lucide, selector de capas con indicador
+  deslizante (pulsar el overlay activo lo apaga), fundido entre mapas
+  base y overlays, gauge que cuenta sincronizado con su anillo, tarjetas
+  con estado de carga y entrada escalonada, y caída escalonada de los
+  marcadores. Todo el movimiento se desactiva con `prefers-reduced-motion`.
