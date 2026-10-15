@@ -81,7 +81,7 @@ function onError(err) {
   showToast(
     denied
       ? 'Permiso de ubicación denegado. Mostrando Villa de Leyva.'
-      : '📍 No se pudo obtener tu ubicación. Mostrando Villa de Leyva.',
+      : 'No se pudo obtener tu ubicación. Mostrando Villa de Leyva.',
     3500
   );
 }

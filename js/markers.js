@@ -9,6 +9,7 @@
  */
 
 import { openPanel, showToast } from './map.js';
+import { icon }                 from './icons.js';
 
 /**
  * Carga los spots del JSON y los agrega al mapa.
@@ -23,7 +24,7 @@ export async function initMarkers(map) {
     spots = await res.json();
   } catch (err) {
     console.error('[Markers]', err);
-    showToast('⚠️ No se pudieron cargar los nodos de astroturismo');
+    showToast('No se pudieron cargar los nodos de astroturismo');
     return;
   }
 
@@ -34,7 +35,7 @@ export async function initMarkers(map) {
 /**
  * Crea y agrega un marcador SVG personalizado al mapa.
  * - Verde con estrella: sitio funcional para observación
- * - Naranja con ícono educativo: solo centro educativo/planetario
+ * - Naranja con telescopio: solo centro educativo/planetario
  *
  * @param {L.Map}   map
  * @param {Object}  spot - Objeto del catálogo
@@ -45,7 +46,7 @@ function addMarker(map, spot) {
   // Color del marcador según funcionalidad
   const color      = isFunctional ? '#27AE60' : '#F39C12';
   const colorLight = isFunctional ? 'rgba(39,174,96,0.2)' : 'rgba(243,156,18,0.2)';
-  const icon       = isFunctional ? '★' : '◎';
+  const glyph      = icon(isFunctional ? 'star' : 'telescope', 14);
 
   // Marcador SVG personalizado
   const svgIcon = L.divIcon({
@@ -63,16 +64,15 @@ function addMarker(map, spot) {
             fill="${color}" fill-opacity="0.9"/>
           <circle cx="16" cy="16" r="10" fill="${colorLight}" stroke="${color}" stroke-width="1.5"/>
         </svg>
-        <!-- Ícono interior -->
+        <!-- Ícono interior: 14px centrado en el círculo (cx=16, cy=16) -->
         <span style="
           position: absolute;
-          top: 7px; left: 0; right: 0;
-          text-align: center;
-          font-size: 14px;
+          top: 9px; left: 9px;
+          display: flex;
           color: white;
           pointer-events: none;
-          text-shadow: 0 0 4px rgba(0,0,0,0.5);
-        ">${icon}</span>
+          filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
+        ">${glyph}</span>
       </div>
     `,
     iconSize:   [32, 40],

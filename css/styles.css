@@ -262,7 +262,7 @@ html, body {
   border-radius: 50%;
   background: none;
   color: var(--text-muted);
-  font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   transition: background var(--trans), color var(--trans);
 }
@@ -441,7 +441,6 @@ html, body {
   width: 28px; height: 28px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 12px;
   display: flex; align-items: center; justify-content: center;
   transition: all var(--trans);
 }
@@ -466,7 +465,8 @@ html, body {
   padding-right: 36px;
 }
 
-.panel-location-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+.panel-location-icon { display: flex; flex-shrink: 0; margin-top: 1px; } /* color heredado */
+.panel-location-icon svg { width: 20px; height: 20px; }
 
 .panel-location-name {
   font-family: var(--font-display);
@@ -531,7 +531,16 @@ html, body {
   letter-spacing: 0.08em;
 }
 
-.gauge-verdict { font-size: 13px; color: var(--text-secondary); text-align: center; font-style: italic; }
+.gauge-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  font-style: italic;
+}
+.gauge-verdict svg { flex-shrink: 0; width: 14px; height: 14px; }
 
 .mini-spinner {
   width: 20px; height: 20px;
@@ -588,7 +597,8 @@ html, body {
   gap: 4px;
 }
 
-.condition-icon { font-size: 16px; }
+.condition-icon { display: flex; color: var(--accent-light); }
+.condition-icon svg { width: 18px; height: 18px; }
 .condition-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-secondary); }
 .condition-value { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--text-primary); }
 
@@ -688,6 +698,9 @@ html, body {
 html.light-theme .bortle-1, html.light-theme .bortle-2 { color: #1E8449; border-color: #1E8449; }
 html.light-theme .bortle-3, html.light-theme .bortle-4 { color: #1F6F94; border-color: #1F6F94; }
 html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-color: #A86A0C; }
+
+.spot-functional { display: inline-flex; align-items: center; gap: 4px; }
+.spot-functional svg { flex-shrink: 0; width: 14px; height: 14px; }
 
 .obs-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
 
@@ -844,10 +857,8 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
   color: var(--text-secondary);
 }
 
-.layer-btn-icon {
-  font-size: 20px;
-  line-height: 1;
-}
+.layer-btn-icon { display: flex; } /* color heredado del botón */
+.layer-btn-icon svg { width: 20px; height: 20px; }
 
 .layer-btn-label {
   font-family: var(--font-body);
@@ -892,6 +903,6 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
     min-width: 58px;
   }
 
-  .layer-btn-icon { font-size: 18px; }
+  .layer-btn-icon svg { width: 18px; height: 18px; }
   .layer-btn-label { font-size: 9px; }
 }

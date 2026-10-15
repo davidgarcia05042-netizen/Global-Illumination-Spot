@@ -20,6 +20,7 @@
  */
 
 import { getTheme } from './theme.js';
+import { icon }     from './icons.js';
 
 export const DEFAULT_CENTER = [5.5353, -73.3678]; // Villa de Leyva
 export const DEFAULT_ZOOM   = 6;
@@ -184,7 +185,7 @@ function attachTileErrorHandler(layer, message) {
   layer.on('tileerror', () => {
     if (!errorShown) {
       errorShown = true;
-      showToast(`⚠️ ${message}`, 3500);
+      showToast(message, 3500);
     }
   });
   layer.on('load', () => {
@@ -333,14 +334,20 @@ export function setGauge(percent) {
 
   if (percent >= 70) {
     fill.setAttribute('class', 'gauge-fill good');
-    verdict.textContent = '✦ Condiciones óptimas para observar';
+    setVerdict(verdict, 'sparkles', 'Condiciones óptimas para observar');
   } else if (percent >= 40) {
     fill.setAttribute('class', 'gauge-fill medium');
-    verdict.textContent = '◑ Condiciones aceptables';
+    setVerdict(verdict, 'contrast', 'Condiciones aceptables');
   } else {
     fill.setAttribute('class', 'gauge-fill bad');
-    verdict.textContent = '✕ Condiciones desfavorables';
+    setVerdict(verdict, 'circle-x', 'Condiciones desfavorables');
   }
+}
+
+// Icono (SVG propio, vía innerHTML) + texto (nodo de texto, nunca HTML)
+function setVerdict(el, iconName, text) {
+  el.innerHTML = icon(iconName, 14);
+  el.append(document.createTextNode(text));
 }
 
 // ── Ficha técnica ──────────────────────────────────────────────
@@ -371,7 +378,7 @@ function renderSpotInfo(spot) {
     <div class="spot-info-row">
       <span class="spot-info-key">Funcional</span>
       <span class="spot-info-val" style="color:${spot.is_functional ? 'var(--good)' : 'var(--bad)'}">
-        ${spot.is_functional ? '✔ Sí' : '✘ Solo educativo'}
+        <span class="spot-functional">${spot.is_functional ? `${icon('check', 14)}Sí` : `${icon('x', 14)}Solo educativo`}</span>
       </span>
     </div>
     <div class="spot-info-row">
@@ -449,22 +456,22 @@ function buildLayerSwitcher(map, { mapBases, lightPollutionLayer, cloudsLayer, s
   const showLightDisclaimer = () => {
     if (lightDisclaimerShown) return;
     lightDisclaimerShown = true;
-    showToast('ℹ️ Contaminación lumínica: compuesto histórico anual (no en tiempo real)', 3500);
+    showToast('Contaminación lumínica: compuesto histórico anual (no en tiempo real)', 3500);
   };
   if (lightAvailable) setTimeout(showLightDisclaimer, 1500);
 
   const layers = [
-    { id: 'map',       icon: '🗺️', label: 'Mapa',           type: 'base' },
-    { id: 'satellite', icon: '🛰️', label: 'Satélite',       type: 'base' },
+    { id: 'map',       icon: 'map',       label: 'Mapa',     type: 'base' },
+    { id: 'satellite', icon: 'satellite', label: 'Satélite', type: 'base' },
     {
-      id: 'light', icon: '💡', label: 'Contaminación', type: 'overlay',
+      id: 'light', icon: 'lightbulb', label: 'Contaminación', type: 'overlay',
       disabled: !lightAvailable,
       title: lightAvailable
         ? 'Compuesto histórico anual VIIRS/NASA — no es una medición en tiempo real'
         : 'No disponible en modo demo (sin URL de Earth Engine configurada)',
     },
     {
-      id: 'clouds', icon: '☁️', label: 'Nubosidad', type: 'overlay',
+      id: 'clouds', icon: 'cloud', label: 'Nubosidad', type: 'overlay',
       disabled: !cloudsAvailable,
       title: cloudsAvailable ? undefined : 'No disponible en modo demo (sin API key configurada)',
     },
@@ -485,14 +492,14 @@ function buildLayerSwitcher(map, { mapBases, lightPollutionLayer, cloudsLayer, s
   const sep = document.createElement('div');
   sep.className = 'layer-sep';
 
-  layers.forEach(({ id, icon, label, type, title, disabled }) => {
+  layers.forEach(({ id, icon: iconName, label, type, title, disabled }) => {
     const btn = document.createElement('button');
     const isActive = (type === 'base' && id === currentBase) ||
                      (type === 'overlay' && id === currentOverlay && !disabled);
     btn.className  = 'layer-btn' + (isActive ? ' active' : '');
     btn.dataset.id = id;
     btn.setAttribute('aria-pressed', String(isActive));
-    btn.innerHTML  = `<span class="layer-btn-icon" aria-hidden="true">${icon}</span><span class="layer-btn-label">${label}</span>`;
+    btn.innerHTML  = `<span class="layer-btn-icon" aria-hidden="true">${icon(iconName, 20)}</span><span class="layer-btn-label">${label}</span>`;
     if (title) btn.title = title;
 
     if (disabled) {

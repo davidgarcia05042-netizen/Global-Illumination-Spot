@@ -17,6 +17,7 @@
  */
 
 import { openPanel, showToast } from './map.js';
+import { icon }                 from './icons.js';
 
 const NOMINATIM_URL   = 'https://nominatim.openstreetmap.org/search';
 const DEBOUNCE_MS     = 500; // tiempo de espera antes de lanzar la búsqueda
@@ -136,7 +137,7 @@ async function performSearch(query) {
     }
   } catch (err) {
     console.error('[Search]', err);
-    showToast('⚠️ Error al conectar con el buscador');
+    showToast('Error al conectar con el buscador');
     hideResults();
   }
 }
@@ -229,7 +230,7 @@ function buildItem(place, title, onRemove) {
     const remove = document.createElement('button');
     remove.type      = 'button';
     remove.className = 'search-item-remove';
-    remove.textContent = '✕';
+    remove.innerHTML = icon('x', 14);
     remove.setAttribute('aria-label', `Quitar ${place.name} del historial`);
     remove.addEventListener('click', (e) => {
       // Sin esto, el clic llega a document con el <li> ya quitado del DOM

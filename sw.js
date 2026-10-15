@@ -24,6 +24,7 @@ const PRECACHE_ASSETS = [
   './manifest.json',
   './css/styles.css',
   './js/app.js',
+  './js/icons.js',
   './js/map.js',
   './js/markers.js',
   './js/search.js',
