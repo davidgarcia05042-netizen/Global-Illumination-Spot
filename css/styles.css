@@ -436,6 +436,15 @@ html, body {
 
 .side-panel.open { transform: translateX(0); }
 
+/* Al abrir desde cerrado (map.js: playPanelEntrance) el gauge y las
+   secciones entran escalonados mientras el panel se desliza */
+.side-panel.is-entering .success-gauge,
+.side-panel.is-entering .panel-section {
+  --rise: 12px;
+  animation: rise-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation-delay: calc(120ms + var(--i, 0) * 60ms);
+}
+
 .side-panel::-webkit-scrollbar { width: 4px; }
 .side-panel::-webkit-scrollbar-track { background: transparent; }
 .side-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -508,7 +517,9 @@ html, body {
   stroke: var(--accent);
   stroke-width: 8;
   stroke-linecap: round;
-  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease;
+  /* 0.8s y ease-out cubic = GAUGE_MS y easeOutCubic de map.js: el número
+     cuenta sincronizado con el anillo */
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.33, 1, 0.68, 1), stroke 0.4s ease;
 }
 
 .gauge-fill.good   { stroke: var(--good); }
@@ -603,6 +614,32 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+/* Cargando (valor '...'): shimmer en vez del texto */
+.condition-card.is-loading {
+  background-image: linear-gradient(90deg, var(--bg-card) 25%, var(--border) 50%, var(--bg-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+.condition-card.is-loading .condition-value { color: transparent; }
+
+@keyframes shimmer {
+  from { background-position: 150% 0; }
+  to   { background-position: -50% 0; }
+}
+
+/* Llegan los datos: entrada escalonada, 50 ms entre tarjetas (--i) */
+.condition-card.is-entering {
+  --rise: 6px;
+  animation: rise-in 0.35s ease-out both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+
+/* Fade + slide-up compartido por tarjetas y secciones del panel */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(var(--rise, 8px)); }
+  to   { opacity: 1; transform: none; }
 }
 
 .condition-icon { display: flex; color: var(--accent-light); }
@@ -943,4 +980,15 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
 /* Va después del bloque móvil para ganarle a su transition: bottom */
 @media (prefers-reduced-motion: reduce) {
   .layer-switcher { transition: none; }
+}
+
+/* ── Reduced motion: animaciones del panel (fase 4) ──────────────
+   Al final del archivo para ganar a .gauge-fill y .condition-card,
+   que se declaran antes con la misma especificidad. */
+@media (prefers-reduced-motion: reduce) {
+  .side-panel.is-entering .success-gauge,
+  .side-panel.is-entering .panel-section,
+  .condition-card.is-entering,
+  .condition-card.is-loading { animation: none; }
+  .gauge-fill { transition: none; }
 }

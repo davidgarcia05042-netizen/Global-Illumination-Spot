@@ -38,6 +38,13 @@ const CLOUDS_OPACITY = 0.65;
 const FADE_MS      = 400;
 const LOAD_WAIT_MS = 800; // tope de espera a las teselas antes de fundir
 
+// Gauge: debe coincidir con la transición de .gauge-fill en styles.css
+const GAUGE_MS = 800;
+let gaugeRaf   = null; // conteo del número en curso
+
+// Entrada escalonada del panel (ver playPanelEntrance)
+let panelEntranceTimer = null;
+
 let map                 = null;
 let lightPollutionLayer = null;
 let searchPin           = null; // pin del último lugar elegido en el buscador
@@ -236,7 +243,11 @@ export function openPanel(latlng, nombre, region, spot = null, { zoom, pin = fal
   setGauge(null); // estado "cargando" mientras llega la respuesta del predictor
 
   const panel = document.getElementById('side-panel');
+  const wasOpen = panel.classList.contains('open');
   panel.classList.add('open');
+  // Entrada escalonada solo al abrir desde cerrado; si el panel ya estaba
+  // abierto y solo cambia el lugar, se actualizan los datos sin repetirla
+  if (!wasOpen) playPanelEntrance(panel);
   panel.removeAttribute('aria-hidden');
   panel.inert = false; // cerrado queda inert: fuera del orden de tabulación
   // Usado por el CSS mobile para reposicionar el widget de capas por
@@ -251,6 +262,30 @@ export function openPanel(latlng, nombre, region, spot = null, { zoom, pin = fal
   // Evento que el predictor escucha para lanzar el cálculo
   document.dispatchEvent(
     new CustomEvent('gis:predict', { detail: { latlng, spot } })
+  );
+}
+
+/**
+ * Gauge y secciones visibles del panel entran con fade + slide-up
+ * escalonado (CSS: .side-panel.is-entering). La clase se retira al
+ * terminar para que mostrar después una sección oculta no la anime.
+ */
+function playPanelEntrance(panel) {
+  if (REDUCED_MOTION.matches) return;
+  const items = [
+    panel.querySelector('.success-gauge'),
+    ...panel.querySelectorAll('.panel-section:not([hidden])'),
+  ].filter(Boolean);
+  items.forEach((el, i) => el.style.setProperty('--i', i));
+
+  clearTimeout(panelEntranceTimer);
+  panel.classList.remove('is-entering');
+  void panel.offsetWidth; // reinicia la animación si se reabre enseguida
+  panel.classList.add('is-entering');
+  // retardo base 120 ms + 60 ms por elemento + 400 ms de animación
+  panelEntranceTimer = setTimeout(
+    () => panel.classList.remove('is-entering'),
+    120 + items.length * 60 + 400 + 50
   );
 }
 
@@ -329,11 +364,15 @@ export function setGauge(percent) {
   const verdict = document.getElementById('gauge-verdict');
   const spinner = document.getElementById('gauge-spinner');
 
+  // Un valor nuevo o un null cancelan el conteo que estuviera en curso
+  cancelAnimationFrame(gaugeRaf);
+  gaugeRaf = null;
+
   if (percent === null) {
     label.hidden = true;
     if (spinner) spinner.hidden = false;
     verdict.textContent = 'Calculando condiciones...';
-    fill.style.strokeDashoffset = '314';
+    resetGaugeRing(fill);
     fill.setAttribute('class', 'gauge-fill');
     return;
   }
@@ -341,9 +380,11 @@ export function setGauge(percent) {
   label.hidden = false;
   if (spinner) spinner.hidden = true;
 
+  // Anillo y número parten de 0 a la vez y usan la misma curva y duración
+  resetGaugeRing(fill);
   const offset = 314 - (314 * percent) / 100;
   fill.style.strokeDashoffset = offset.toString();
-  label.textContent = `${Math.round(percent)}%`;
+  countGaugeLabel(label, Math.round(percent));
 
   if (percent >= 70) {
     fill.setAttribute('class', 'gauge-fill good');
@@ -356,6 +397,39 @@ export function setGauge(percent) {
     setVerdict(verdict, 'circle-x', 'Condiciones desfavorables');
   }
 }
+
+// Lleva el anillo a 0 sin transición, para que la siguiente animación
+// arranque desde ahí y no desde donde había quedado el valor anterior
+function resetGaugeRing(fill) {
+  fill.style.transition = 'none';
+  fill.style.strokeDashoffset = '314';
+  void getComputedStyle(fill).strokeDashoffset; // aplica el 0 antes de reactivar
+  fill.style.transition = '';
+}
+
+/**
+ * Cuenta el número de 0 a `target` con requestAnimationFrame, sincronizado
+ * con la transición del anillo (.gauge-fill: GAUGE_MS, misma curva).
+ * Con reduced-motion escribe el valor final directamente.
+ */
+function countGaugeLabel(label, target) {
+  if (REDUCED_MOTION.matches) {
+    label.textContent = `${target}%`;
+    return;
+  }
+  const start = performance.now();
+  const step = (now) => {
+    // el timestamp del frame puede ser un poco anterior a `start`
+    const t = Math.min(1, Math.max(0, (now - start) / GAUGE_MS));
+    label.textContent = `${Math.round(target * easeOutCubic(t))}%`;
+    gaugeRaf = t < 1 ? requestAnimationFrame(step) : null;
+  };
+  label.textContent = '0%';
+  gaugeRaf = requestAnimationFrame(step);
+}
+
+// Equivale a cubic-bezier(0.33, 1, 0.68, 1), la curva del anillo en el CSS
+const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 
 // Icono (SVG propio, vía innerHTML) + texto (nodo de texto, nunca HTML)
 function setVerdict(el, iconName, text) {

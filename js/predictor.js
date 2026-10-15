@@ -35,7 +35,7 @@ export function initPredictor(owmApiKey = '') {
 
 async function runPrediction(latlng, spot) {
   // Mostrar estado de carga en las tarjetas
-  updateConditionsUI({ clouds: '...', moon: '...', bortle: '...', temp: '...' });
+  updateConditionsUI({ clouds: LOADING, moon: LOADING, bortle: LOADING, temp: LOADING });
   setGauge(null);
 
   try {
@@ -181,13 +181,32 @@ function getMoonPhaseName() {
 
 // ── UI ─────────────────────────────────────────────────────────
 
+// '...' es el estado de carga: la tarjeta muestra un shimmer (is-loading).
+// Cuando llega cualquier otro valor (incluido 'N/D') entra con fade +
+// slide-up, escalonada por su posición (--i; ver styles.css).
+const LOADING = '...';
+
 function updateConditionsUI({ clouds, moon, bortle, temp }) {
-  const set = (id, val) => {
+  const set = (id, val, i) => {
     const el = document.getElementById(id);
-    if (el) el.textContent = val;
+    if (!el) return;
+    el.textContent = val;
+
+    const card = el.closest('.condition-card');
+    if (!card) return;
+    card.style.setProperty('--i', i);
+    if (val === LOADING) {
+      card.classList.remove('is-entering');
+      card.classList.add('is-loading');
+    } else if (card.classList.contains('is-loading')) {
+      card.classList.remove('is-loading');
+      card.classList.remove('is-entering');
+      void card.offsetWidth; // reinicia la animación de entrada
+      card.classList.add('is-entering');
+    }
   };
-  set('cond-clouds', clouds);
-  set('cond-moon',   moon);
-  set('cond-bortle', bortle);
-  set('cond-temp',   temp);
+  set('cond-clouds', clouds, 0);
+  set('cond-moon',   moon,   1);
+  set('cond-bortle', bortle, 2);
+  set('cond-temp',   temp,   3);
 }
