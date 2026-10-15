@@ -33,6 +33,8 @@ const PRECACHE_ASSETS = [
   './js/simulator.js',
   './js/install.js',
   './js/theme.js',
+  './js/guide.js',
+  './partials/guide.html',
   './js/config.js',
   './data/spots.json',
   './assets/icons/icon-192.png',

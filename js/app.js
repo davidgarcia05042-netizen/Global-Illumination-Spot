@@ -10,7 +10,7 @@
  *   4. Buscador (necesita el mapa listo)
  *   5. Predictor (necesita mapa + marcadores)
  *   6. Simulador (necesita el predictor)
- *   7. Instalación PWA + tema claro/oscuro (independientes del resto)
+ *   7. Instalación PWA + tema claro/oscuro + guía de uso (independientes del resto)
  */
 
 import { initMap }       from './map.js';
@@ -21,6 +21,7 @@ import { initPredictor } from './predictor.js';
 import { initSimulator } from './simulator.js';
 import { initInstall }   from './install.js';
 import { initTheme }     from './theme.js';
+import { initGuide }     from './guide.js';
 
 // ── Registrar Service Worker ───────────────────────────────────
 if ('serviceWorker' in navigator) {
@@ -75,9 +76,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 5. Inicializar simulador de sliders
   initSimulator();
 
-  // 6. Instalación PWA (RF08) y tema claro/oscuro (RF09)
+  // 6. Instalación PWA (RF08), tema claro/oscuro (RF09) y guía de uso (RF13)
   initInstall();
   initTheme();
+  initGuide();
 
   // 7. Quitar loader inicial
   const loader = document.getElementById('app-loader');
