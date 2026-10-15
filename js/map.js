@@ -483,14 +483,23 @@ function buildLayerSwitcher(map, { mapBases, lightPollutionLayer, cloudsLayer, s
   // Evitar que clicks en el widget disparen el click del mapa debajo
   L.DomEvent.disableClickPropagation(container);
 
-  // Separador visual entre bases y overlays
-  const groupBase    = document.createElement('div');
-  const groupOverlay = document.createElement('div');
-  groupBase.className    = 'layer-group';
-  groupOverlay.className = 'layer-group';
+  // Un grupo para bases y otro para overlays, cada uno con su píldora
+  const groupBase    = createLayerGroup();
+  const groupOverlay = createLayerGroup();
 
+  // Separador visual entre bases y overlays
   const sep = document.createElement('div');
   sep.className = 'layer-sep';
+
+  // Marca el botón activo de un grupo (o ninguno) y mueve su píldora
+  const setActive = (group, activeBtn) => {
+    group.querySelectorAll('.layer-btn').forEach((b) => {
+      const on = b === activeBtn;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    updatePill(group);
+  };
 
   layers.forEach(({ id, icon: iconName, label, type, title, disabled }) => {
     const btn = document.createElement('button');
@@ -525,41 +534,31 @@ function buildLayerSwitcher(map, { mapBases, lightPollutionLayer, cloudsLayer, s
         }
 
         currentBase = id;
-        // Actualizar botones del grupo base
-        groupBase.querySelectorAll('.layer-btn').forEach(b => {
-          b.classList.remove('active');
-          b.setAttribute('aria-pressed', 'false');
-        });
+        setActive(groupBase, btn);
 
       } else {
-        // Overlay
-        if (id === currentOverlay) return;
+        // Overlay: pulsar el activo lo apaga (queda sin overlay)
+        const next = id === currentOverlay ? 'none' : id;
 
         // Quitar overlay anterior
         if (currentOverlay === 'light' && lightPollutionLayer && map.hasLayer(lightPollutionLayer)) map.removeLayer(lightPollutionLayer);
         if (currentOverlay === 'clouds' && cloudsLayer && map.hasLayer(cloudsLayer)) map.removeLayer(cloudsLayer);
 
         // Activar nuevo overlay
-        if (id === 'light' && lightPollutionLayer) {
+        if (next === 'light' && lightPollutionLayer) {
           lightPollutionLayer.addTo(map);
           lightPollutionLayer.setZIndex(2);
           showLightDisclaimer();
-        } else if (id === 'clouds' && cloudsLayer) {
+        } else if (next === 'clouds' && cloudsLayer) {
           cloudsLayer.addTo(map);
           cloudsLayer.setZIndex(2);
         }
         // 'none' = no añadir nada
 
-        currentOverlay = id;
-        groupOverlay.querySelectorAll('.layer-btn').forEach(b => {
-          b.classList.remove('active');
-          b.setAttribute('aria-pressed', 'false');
-        });
+        currentOverlay = next;
+        setActive(groupOverlay, next === 'none' ? null : btn);
       }
-
-      btn.classList.add('active');
-      btn.setAttribute('aria-pressed', 'true');
-      showToast(`Capa: ${label}`);
+      // Sin toast "Capa: X": la píldora ya muestra el cambio
     });
 
     if (type === 'base')    groupBase.appendChild(btn);
@@ -571,4 +570,58 @@ function buildLayerSwitcher(map, { mapBases, lightPollutionLayer, cloudsLayer, s
   container.appendChild(groupOverlay);
 
   document.getElementById('map').appendChild(container);
+
+  // Primera colocación sin transición (si no, la píldora "volaría" desde
+  // x=0 al cargar). Las medidas cambian cuando carga la fuente Outfit o
+  // al pasar al layout móvil: se recoloca también sin transición.
+  const placeAll = () => {
+    updatePill(groupBase, { instant: true });
+    updatePill(groupOverlay, { instant: true });
+  };
+  placeAll();
+  if ('ResizeObserver' in window) new ResizeObserver(placeAll).observe(container);
+  document.fonts?.ready.then(placeAll);
+}
+
+/** .layer-group con su .layer-pill (indicador deslizante) detrás de los botones */
+function createLayerGroup() {
+  const group = document.createElement('div');
+  group.className = 'layer-group';
+  const pill = document.createElement('span');
+  pill.className = 'layer-pill is-hidden';
+  pill.setAttribute('aria-hidden', 'true');
+  group.appendChild(pill);
+  return group;
+}
+
+/**
+ * Lleva la píldora del grupo bajo su botón activo, o la desvanece si no
+ * hay ninguno (overlay apagado, o ambos deshabilitados en modo demo).
+ * Los botones disabled nunca son "active", así que nunca la reciben.
+ * @param {HTMLElement} group
+ * @param {{instant?: boolean}} [opts] - recolocar sin animar
+ */
+function updatePill(group, { instant = false } = {}) {
+  const pill   = group.querySelector('.layer-pill');
+  const active = group.querySelector('.layer-btn.active:not(:disabled)');
+
+  if (!active) {
+    pill.classList.add('is-hidden');
+    return;
+  }
+
+  // Si estaba oculta, aparece directamente en su sitio (solo fade), en vez
+  // de deslizarse desde el botón donde estuvo la última vez
+  const wasHidden = pill.classList.contains('is-hidden');
+  const noSlide   = instant || wasHidden;
+  if (noSlide) pill.classList.add('no-transition');
+
+  pill.style.width     = `${active.offsetWidth}px`;
+  pill.style.transform = `translateX(${active.offsetLeft}px)`;
+
+  if (noSlide) {
+    void pill.offsetWidth; // aplica la posición antes de reactivar la transición
+    pill.classList.remove('no-transition');
+  }
+  pill.classList.remove('is-hidden');
 }

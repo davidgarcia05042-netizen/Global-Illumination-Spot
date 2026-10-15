@@ -819,6 +819,8 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
 }
 
 .layer-btn {
+  position: relative;
+  z-index: 1; /* por encima de la .layer-pill del grupo */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -829,20 +831,19 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
   padding: 7px 14px;
   cursor: pointer;
   color: var(--text-secondary);
-  transition: all var(--trans);
+  transition: color var(--trans);
   min-width: 70px;
 }
 
-.layer-btn:hover {
-  background: var(--bg-card);
-  border-color: var(--border);
-  color: var(--text-primary);
-}
+/* El fondo del activo lo pinta la píldora: hover y activo solo cambian
+   el color, para no chocar con ella mientras se desliza */
+.layer-btn:hover        { color: var(--text-primary); }
+.layer-btn.active,
+.layer-btn.active:hover { color: #fff; }
 
-.layer-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
+.layer-btn:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 2px;
 }
 
 .layer-btn:disabled,
@@ -851,14 +852,37 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
   cursor: not-allowed;
 }
 
-.layer-btn:disabled:hover {
-  background: transparent;
-  border-color: transparent;
-  color: var(--text-secondary);
-}
+.layer-btn:disabled:hover { color: var(--text-secondary); }
 
-.layer-btn-icon { display: flex; } /* color heredado del botón */
+.layer-btn-icon {
+  display: flex; /* color heredado del botón */
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 .layer-btn-icon svg { width: 20px; height: 20px; }
+.layer-btn.active .layer-btn-icon { transform: translateY(-1px) scale(1.08); }
+
+/* Indicador deslizante: uno por grupo, detrás de los botones. map.js
+   fija su width y translateX según el botón activo (offsetWidth/offsetLeft) */
+.layer-pill {
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 0;
+  z-index: 0;
+  border-radius: 28px;
+  background: var(--accent);
+  pointer-events: none;
+  transition:
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    width     0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity   0.25s ease;
+}
+.layer-pill.is-hidden     { opacity: 0; }
+.layer-pill.no-transition { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .layer-btn-icon,
+  .layer-pill { transition: none; }
+}
 
 .layer-btn-label {
   font-family: var(--font-body);
@@ -868,6 +892,7 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
 }
 
 .layer-group {
+  position: relative; /* referencia de la .layer-pill y de offsetLeft */
   display: flex;
   gap: 4px;
 }
@@ -905,4 +930,9 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
 
   .layer-btn-icon svg { width: 18px; height: 18px; }
   .layer-btn-label { font-size: 9px; }
+}
+
+/* Va después del bloque móvil para ganarle a su transition: bottom */
+@media (prefers-reduced-motion: reduce) {
+  .layer-switcher { transition: none; }
 }
