@@ -32,6 +32,7 @@ let opener     = null;  // botón que abrió la guía: recibe el foco al cerrar
 let loading    = null;  // promesa de carga en curso o resuelta (null = reintentar)
 let observer   = null;
 let scrollLock = null;  // id de la sección a la que se está haciendo scroll
+let activeId   = null;  // sección resaltada ahora en el índice
 
 export function initGuide() {
   dialog    = document.getElementById('guide-dialog');
@@ -211,34 +212,62 @@ function buildToc() {
   });
 
   tocEl.replaceChildren(list);
+  activeId = null; // enlaces nuevos: el primer setActive debe marcarlos
   observeSections(sections);
   if (sections[0]) setActive(sections[0].id);
 }
 
+// Línea de lectura: la sección activa es la última cuyo inicio ya la cruzó
+const READING_LINE = 0.3; // fracción de la altura del área de lectura
+
 /**
- * Resalta en el índice la primera sección que ocupa la franja superior
- * (40 %) del área de lectura.
+ * El IntersectionObserver avisa cuando una sección cruza la línea de
+ * lectura (franja superior del 30 %); quien decide cuál resaltar es
+ * updateActive(), que también corre en el scroll.
  */
 function observeSections(sections) {
   observer?.disconnect();
-  const visible = new Map();
-  observer = new IntersectionObserver((entries) => {
-    entries.forEach((en) => visible.set(en.target.id, en.isIntersecting));
-    if (scrollLock) return;
-    const current = sections.find((s) => visible.get(s.id));
-    if (current) setActive(current.id);
-  }, { root: contentEl, rootMargin: '0px 0px -60% 0px', threshold: 0 });
+  observer = new IntersectionObserver(updateActive, {
+    root: contentEl,
+    rootMargin: `0px 0px -${(1 - READING_LINE) * 100}% 0px`,
+    threshold: 0,
+  });
   sections.forEach((s) => observer.observe(s));
 }
 
-// Las últimas secciones, si son cortas, nunca llegan a la franja superior:
-// al tocar fondo se marca la última
+// El scroll se necesita para el final del contenido: las últimas secciones,
+// si son cortas, nunca cruzan la línea de lectura y el observer no avisa
 function onContentScroll() {
+  updateActive();
+}
+
+/**
+ * Única fuente de verdad del resaltado (observer y scroll pasan por aquí;
+ * antes el observer, que corre después del scroll, pisaba la última sección).
+ */
+function updateActive() {
   if (scrollLock) return;
+  const sections = [...contentEl.querySelectorAll('section[id^="ayuda-"]')];
+  if (!sections.length) return;
+
+  // Extremos: arriba del todo, la primera; al tocar fondo, la última
+  if (contentEl.scrollTop <= 0) {
+    setActive(sections[0].id);
+    return;
+  }
   const atBottom = contentEl.scrollTop + contentEl.clientHeight >= contentEl.scrollHeight - 2;
-  if (!atBottom) return;
-  const sections = contentEl.querySelectorAll('section[id^="ayuda-"]');
-  if (sections.length) setActive(sections[sections.length - 1].id);
+  if (atBottom) {
+    setActive(sections[sections.length - 1].id);
+    return;
+  }
+
+  const line = contentEl.getBoundingClientRect().top + contentEl.clientHeight * READING_LINE;
+  let current = sections[0];
+  for (const s of sections) {
+    if (s.getBoundingClientRect().top <= line) current = s;
+    else break;
+  }
+  setActive(current.id);
 }
 
 function scrollToSection(id, smooth) {
@@ -258,6 +287,8 @@ function scrollToSection(id, smooth) {
 }
 
 function setActive(id) {
+  if (id === activeId) return; // se llama en cada scroll: no tocar el DOM si no cambió
+  activeId = id;
   let activeLink = null;
   tocEl.querySelectorAll('.guide-toc-link').forEach((a) => {
     const on = a.dataset.target === id;
