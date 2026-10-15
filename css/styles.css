@@ -59,10 +59,17 @@ html.light-theme {
   --glass-switcher: rgba(255, 255, 255, 0.92);
 }
 
-/* Botón de tema: muestra el sol en oscuro (pasar a claro) y la luna en claro */
-.theme-icon-moon                     { display: none; }
-html.light-theme .theme-icon-sun     { display: none; }
-html.light-theme .theme-icon-moon    { display: block; }
+/* Botón de tema: muestra el sol en oscuro (pasar a claro) y la luna en
+   claro. Ambos iconos apilados en la misma celda: el entrante rota y
+   aparece con fade, el saliente sale girando (ver Microinteracciones) */
+#theme-btn { display: grid; place-items: center; }
+#theme-btn svg { grid-area: 1 / 1; }
+.theme-icon-moon,
+html.light-theme .theme-icon-sun {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.5);
+}
+html.light-theme .theme-icon-moon { opacity: 1; transform: none; }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -194,7 +201,7 @@ html, body {
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   color: white;
-  transition: background var(--trans);
+  transition: background var(--trans), transform 0.1s ease;
 }
 
 .search-btn:hover { background: var(--accent-light); }
@@ -358,6 +365,44 @@ html, body {
 
 @media (prefers-reduced-motion: reduce) {
   .search-pin svg { animation: none; }
+}
+
+/* ── Marcadores del catálogo (markers.js) ──
+   La raíz .spot-marker la posiciona Leaflet con transform: toda animación
+   va en el hijo .spot-pin. Color por tipo vía currentColor. */
+.spot-marker--functional  { color: var(--good); }
+.spot-marker--educational { color: var(--medium); }
+
+.spot-pin {
+  position: relative;
+  width: 32px;
+  height: 40px;
+  cursor: pointer;
+  transform-origin: 50% 100%;
+  transition: transform 0.2s ease;
+  /* backwards: invisible durante su retardo y, al terminar, libre para
+     el transform del hover (con "both" la animación lo bloquearía) */
+  animation: pin-drop 0.45s cubic-bezier(0.3, 1.4, 0.6, 1) backwards;
+}
+.spot-pin svg      { display: block; overflow: visible; }
+.spot-pin-body     { fill: currentColor; fill-opacity: 0.9; }
+.spot-pin-ring     { fill: currentColor; fill-opacity: 0.2; stroke: currentColor; stroke-width: 1.5; }
+.spot-pin-glyph {
+  position: absolute;
+  top: 9px; left: 9px; /* 14px centrado en el círculo (cx=16, cy=16) */
+  display: flex;
+  color: #fff;
+  pointer-events: none;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+}
+
+.spot-marker:hover .spot-pin,
+.spot-marker:focus-visible .spot-pin { transform: translateY(-3px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .spot-pin { animation: none; transition: none; }
+  .spot-marker:hover .spot-pin,
+  .spot-marker:focus-visible .spot-pin { transform: none; }
 }
 
 /* "Mi ubicación" estilo Google Maps: punto azul con borde blanco, halo
@@ -876,7 +921,7 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
   padding: 7px 14px;
   cursor: pointer;
   color: var(--text-secondary);
-  transition: color var(--trans);
+  transition: color var(--trans), transform 0.1s ease;
   min-width: 70px;
 }
 
@@ -991,4 +1036,38 @@ html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-
   .condition-card.is-entering,
   .condition-card.is-loading { animation: none; }
   .gauge-fill { transition: none; }
+}
+
+/* ── Microinteracciones (fase 5) ─────────────────────────────────
+   Al final del archivo para ganar a las reglas base de cada botón. */
+
+/* Pulsación: leve hundimiento. .search-btn conserva su centrado vertical */
+.icon-btn:active,
+.layer-btn:not(:disabled):active,
+.panel-close:active { transform: scale(0.96); }
+.search-btn:active   { transform: translateY(-50%) scale(0.96); }
+
+/* Icono del tema: el entrante rota con un leve rebote y hace fade */
+#theme-btn svg {
+  transition:
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity   0.25s ease;
+}
+
+/* Toast: entrada con rebote (la salida conserva la curva base) */
+.toast.show {
+  transition:
+    opacity   0.25s ease,
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn:active,
+  .layer-btn:not(:disabled):active,
+  .panel-close:active { transform: none; }
+  .search-btn:active   { transform: translateY(-50%); }
+  #theme-btn svg       { transition: none; }
+  /* Toast sin desplazamiento: solo aparece/desaparece con opacidad */
+  .toast,
+  .toast.show { transform: translateX(-50%); transition: opacity 0.25s ease; }
 }

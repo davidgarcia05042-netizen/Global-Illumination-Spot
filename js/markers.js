@@ -28,51 +28,44 @@ export async function initMarkers(map) {
     return;
   }
 
-  spots.forEach((spot) => addMarker(map, spot));
+  // Caída escalonada: el último pin empieza a ~600 ms como máximo, sin
+  // importar cuántos haya en el catálogo
+  const step = spots.length > 1 ? Math.min(DROP_STEP_MS, DROP_TOTAL_MS / (spots.length - 1)) : 0;
+  spots.forEach((spot, i) => addMarker(map, spot, Math.round(i * step)));
   console.log(`[Markers] ${spots.length} nodos cargados.`);
 }
+
+const DROP_STEP_MS  = 70;
+const DROP_TOTAL_MS = 600;
 
 /**
  * Crea y agrega un marcador SVG personalizado al mapa.
  * - Verde con estrella: sitio funcional para observación
  * - Naranja con telescopio: solo centro educativo/planetario
  *
+ * Estilos y colores en styles.css (.spot-marker / .spot-pin). Las
+ * animaciones van en el div interior .spot-pin, NUNCA en la raíz del
+ * divIcon: Leaflet la posiciona con transform y se rompería.
+ *
  * @param {L.Map}   map
- * @param {Object}  spot - Objeto del catálogo
+ * @param {Object}  spot    - Objeto del catálogo
+ * @param {number}  delayMs - retardo de la animación de caída
  */
-function addMarker(map, spot) {
+function addMarker(map, spot, delayMs = 0) {
   const isFunctional = spot.is_functional;
+  const kind  = isFunctional ? 'functional' : 'educational';
+  const glyph = icon(isFunctional ? 'star' : 'telescope', 14);
 
-  // Color del marcador según funcionalidad
-  const color      = isFunctional ? '#27AE60' : '#F39C12';
-  const colorLight = isFunctional ? 'rgba(39,174,96,0.2)' : 'rgba(243,156,18,0.2)';
-  const glyph      = icon(isFunctional ? 'star' : 'telescope', 14);
-
-  // Marcador SVG personalizado
+  // Marcador SVG personalizado (fill/stroke en currentColor = color del tipo)
   const svgIcon = L.divIcon({
-    className: '',
+    className: `spot-marker spot-marker--${kind}`,
     html: `
-      <div style="
-        position: relative;
-        width: 32px;
-        height: 40px;
-        cursor: pointer;
-      ">
-        <!-- Pin principal -->
-        <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 0C7.163 0 0 7.163 0 16c0 10 16 24 16 24S32 26 32 16C32 7.163 24.837 0 16 0z"
-            fill="${color}" fill-opacity="0.9"/>
-          <circle cx="16" cy="16" r="10" fill="${colorLight}" stroke="${color}" stroke-width="1.5"/>
+      <div class="spot-pin" style="animation-delay: ${delayMs}ms">
+        <svg width="32" height="40" viewBox="0 0 32 40" aria-hidden="true">
+          <path class="spot-pin-body" d="M16 0C7.163 0 0 7.163 0 16c0 10 16 24 16 24S32 26 32 16C32 7.163 24.837 0 16 0z"/>
+          <circle class="spot-pin-ring" cx="16" cy="16" r="10"/>
         </svg>
-        <!-- Ícono interior: 14px centrado en el círculo (cx=16, cy=16) -->
-        <span style="
-          position: absolute;
-          top: 9px; left: 9px;
-          display: flex;
-          color: white;
-          pointer-events: none;
-          filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
-        ">${glyph}</span>
+        <span class="spot-pin-glyph">${glyph}</span>
       </div>
     `,
     iconSize:   [32, 40],

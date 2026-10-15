@@ -45,6 +45,8 @@ let gaugeRaf   = null; // conteo del número en curso
 // Entrada escalonada del panel (ver playPanelEntrance)
 let panelEntranceTimer = null;
 
+let toastTimer = null; // ocultado programado del toast visible
+
 let map                 = null;
 let lightPollutionLayer = null;
 let searchPin           = null; // pin del último lugar elegido en el buscador
@@ -498,7 +500,10 @@ export function showToast(message, duration = 2500) {
   if (!toast) return;
   toast.textContent = message;
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), duration);
+  // Un toast seguido reemplaza al anterior: sin esto, el temporizador
+  // del primero ocultaría el segundo antes de su duración
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
 }
 
 // ── Fundido entre capas ────────────────────────────────────────
