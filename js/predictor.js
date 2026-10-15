@@ -61,7 +61,7 @@ async function runPrediction(latlng, spot) {
 
     updateConditionsUI({
       clouds: `${weather.clouds}%`,
-      moon:   `${getMoonPhaseName(moon)} (${Math.round(moon)}%)`,
+      moon:   `${getMoonPhaseName()} (${Math.round(moon)}%)`,
       bortle: `${bortle}/9`,
       temp:   `${weather.temp}°C`,
     });
@@ -121,6 +121,10 @@ async function fetchWeather(lat, lng) {
 }
 
 // ── Bortle via Light Pollution Map ─────────────────────────────
+// NOTA: la API QueryRaster exige una key desde hace tiempo; sin ella
+// responde texto plano ("Invalid or missing authentication"), res.json()
+// falla y se usa el valor conservador (Bortle 5). Los spots del catálogo
+// no dependen de esto porque traen su propio bortle_index.
 
 async function fetchBortle(lat, lng) {
   try {
@@ -148,23 +152,30 @@ function radianceToBortle(r) {
 
 // ── Fase lunar ─────────────────────────────────────────────────
 
-function getMoonIllumination() {
-  const now       = new Date();
-  const KNOWN_NEW = new Date('2024-01-11');
-  const CYCLE     = 29.53058867;
-  const days      = (now - KNOWN_NEW) / 86400000;
-  const phase     = ((days % CYCLE) + CYCLE) % CYCLE;
-  return Math.round(50 - 50 * Math.cos((2 * Math.PI * phase) / CYCLE));
+const MOON_CYCLE = 29.53058867;
+const KNOWN_NEW  = new Date('2024-01-11T11:57:00Z'); // luna nueva de referencia (UTC)
+
+// Edad de la luna en días desde la última luna nueva (0 – 29.53)
+function getMoonAge() {
+  const days = (new Date() - KNOWN_NEW) / 86400000;
+  return ((days % MOON_CYCLE) + MOON_CYCLE) % MOON_CYCLE;
 }
 
-function getMoonPhaseName(percent) {
-  if (percent <= 5)  return 'Nueva';
-  if (percent <= 30) return 'Creciente';
-  if (percent <= 55) return 'Cuarto creciente';
-  if (percent <= 70) return 'Gibosa creciente';
-  if (percent <= 85) return 'Casi llena';
-  if (percent <= 95) return 'Llena';
-  if (percent <= 70) return 'Gibosa menguante';
+function getMoonIllumination() {
+  return Math.round(50 - 50 * Math.cos((2 * Math.PI * getMoonAge()) / MOON_CYCLE));
+}
+
+// El nombre se deriva de la edad (no del % de iluminación), porque el mismo
+// porcentaje ocurre dos veces por ciclo: una creciendo y otra menguando.
+function getMoonPhaseName() {
+  const fraction = getMoonAge() / MOON_CYCLE;
+  if (fraction < 0.03 || fraction >= 0.97) return 'Nueva';
+  if (fraction < 0.22) return 'Creciente';
+  if (fraction < 0.28) return 'Cuarto creciente';
+  if (fraction < 0.47) return 'Gibosa creciente';
+  if (fraction < 0.53) return 'Llena';
+  if (fraction < 0.72) return 'Gibosa menguante';
+  if (fraction < 0.78) return 'Cuarto menguante';
   return 'Menguante';
 }
 

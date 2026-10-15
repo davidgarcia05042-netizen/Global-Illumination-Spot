@@ -14,7 +14,7 @@
  * subpath (ej. GitHub Pages tipo usuario.github.io/repo/).
  */
 
-const CACHE_NAME = 'gis-v2';
+const CACHE_NAME = 'gis-v2.1';
 
 // Archivos críticos precargados en la instalación del SW.
 // Estos estarán disponibles sin internet desde el primer uso.
@@ -27,19 +27,27 @@ const PRECACHE_ASSETS = [
   './js/map.js',
   './js/markers.js',
   './js/search.js',
+  './js/locate.js',
   './js/predictor.js',
   './js/simulator.js',
   './js/install.js',
-  './js/nightmode.js',
+  './js/theme.js',
   './js/config.js',
   './data/spots.json',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
+  // Leaflet desde CDN: sin él la app no arranca offline. index.html lo
+  // carga con crossorigin, así que la respuesta cacheada (CORS) es válida
+  // para la verificación de integridad (SRI).
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
 ];
 
-// Dominios de APIs externas: NUNCA cachear, siempre usar la red
+// Dominios de APIs externas: NUNCA cachear, siempre usar la red.
+// Ojo: se compara con includes(), así que 'api.openweathermap.org' (y no
+// 'openweathermap.org') para no capturar también las teselas de nubes.
 const NETWORK_ONLY_HOSTS = [
-  'openweathermap.org',
+  'api.openweathermap.org',
   'nominatim.openstreetmap.org',
   'lightpollutionmap.info',
   'fonts.googleapis.com',
@@ -48,7 +56,6 @@ const NETWORK_ONLY_HOSTS = [
 
 // Dominios de teselas de mapa: Network-First con fallback a caché
 const TILE_HOSTS = [
-  'basemaps.cartocdn.com',
   'earthengine.googleapis.com',
   'tile.openweathermap.org',
   'server.arcgisonline.com',
@@ -134,7 +141,12 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       });
-      return cached || networkFetch;
+      if (cached) {
+        // Sin red, la actualización en background falla: no es un error real
+        networkFetch.catch(() => {});
+        return cached;
+      }
+      return networkFetch;
     })
   );
 });

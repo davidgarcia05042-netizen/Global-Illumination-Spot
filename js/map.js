@@ -3,29 +3,34 @@
  *
  * Responsabilidades:
  *  - Crear el mapa Leaflet centrado en Colombia
- *  - Agregar capa base oscura (Esri Dark Gray Canvas)
+ *  - Agregar capa base Esri Gray Canvas (oscura o clara según el tema)
  *  - Superponer capa de contaminación lumínica (Google Earth Engine / VIIRS)
- *  - Manejar botón toggle de la capa lumínica
- *  - Manejar botón de geolocalización (fallback: Villa de Leyva)
+ *  - Widget selector de capas (base oscura/satélite + overlays)
  *  - Abrir/cerrar el panel lateral
  *  - Actualizar el gauge de éxito
  *  - Renderizar la ficha técnica de un spot
  *  - Mostrar toasts de notificación
  *
  * Exporta:
- *  - initMap(owmApiKey) → devuelve la instancia del mapa
+ *  - initMap(owmApiKey, geeTileUrl) → devuelve la instancia del mapa
  *  - openPanel() → abre el panel con datos de un punto
  *  - setGauge()  → actualiza el indicador de éxito
  *  - showToast() → muestra una notificación temporal
+ *  - reverseGeocode() → nombre y región de unas coordenadas (Nominatim)
  */
 
-const DEFAULT_CENTER = [5.5353, -73.3678]; // Villa de Leyva
-const DEFAULT_ZOOM   = 6;
+import { getTheme } from './theme.js';
+
+export const DEFAULT_CENTER = [5.5353, -73.3678]; // Villa de Leyva
+export const DEFAULT_ZOOM   = 6;
 const MAX_ZOOM       = 16;
 
-let map               = null;
+// Mismo breakpoint que el CSS: por debajo, el panel es un bottom-sheet
+const MOBILE_MQ = window.matchMedia('(max-width: 640px)');
+
+let map                 = null;
 let lightPollutionLayer = null;
-let lightLayerVisible   = true;
+let searchPin           = null; // pin del último lugar elegido en el buscador
 
 // ── Inicialización del mapa ────────────────────────────────────
 
@@ -54,19 +59,21 @@ export function initMap(owmApiKey = '', geeTileUrl = '') {
   // pruebas que esto estaba rompiendo visualmente el mapa base completo,
   // no solo un overlay. Es la misma familia de servicio (Esri ArcGIS
   // Online) que ya se usa sin problemas para la capa "Satélite" más abajo.
-  // Se compone de dos teselas: el relieve gris oscuro + una capa de
-  // referencia con los nombres de lugares (el base solo no trae etiquetas).
-  const darkBase = L.layerGroup([
+  // Se compone de dos teselas: el relieve gris + una capa de referencia
+  // con los nombres de lugares (el base solo no trae etiquetas).
+  // Hay una variante oscura y una clara; se usa la del tema activo (RF09).
+  const canvasBase = (style) => L.layerGroup([
     L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_${style}_Gray_Base/MapServer/tile/{z}/{y}/{x}`,
       { maxZoom: MAX_ZOOM, zIndex: 1, attribution: '&copy; <a href="https://www.esri.com">Esri</a>' }
     ),
     L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+      `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_${style}_Gray_Reference/MapServer/tile/{z}/{y}/{x}`,
       { maxZoom: MAX_ZOOM, zIndex: 1 }
     ),
   ]);
-  darkBase.addTo(map);
+  const mapBases = { dark: canvasBase('Dark'), light: canvasBase('Light') };
+  mapBases[getTheme()].addTo(map);
 
   // Capa de contaminación lumínica — Google Earth Engine (VIIRS).
   // Dataset: NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG — promedio anual.
@@ -80,6 +87,7 @@ export function initMap(owmApiKey = '', geeTileUrl = '') {
     ? L.tileLayer(geeTileUrl, {
         opacity: 0.75,
         maxZoom: MAX_ZOOM,
+        zIndex: 2, // siempre sobre el mapa base, aunque este se re-añada
         attribution: 'Contaminación lumínica: <a href="https://earthengine.google.com">Google Earth Engine / VIIRS</a>',
         errorTileUrl: '',
       })
@@ -101,6 +109,7 @@ export function initMap(owmApiKey = '', geeTileUrl = '') {
         {
           opacity: 0.65,
           maxZoom: MAX_ZOOM,
+          zIndex: 2,
           attribution: 'Nubes: <a href="https://openweathermap.org">OpenWeatherMap</a>',
           errorTileUrl: '',
         }
@@ -120,68 +129,16 @@ export function initMap(owmApiKey = '', geeTileUrl = '') {
   );
 
   // Widget de capas
-  buildLayerSwitcher(map, { darkBase, lightPollutionLayer, cloudsLayer, satelliteBase });
+  buildLayerSwitcher(map, { mapBases, lightPollutionLayer, cloudsLayer, satelliteBase });
 
-  // Click en el mapa abre el panel para ese punto
+  // Click en el mapa abre el panel para ese punto, con su nombre real
   map.on('click', async (e) => {
     const { lat, lng } = e.latlng;
-    // Obtener nombre real del lugar via Nominatim reverse geocoding
-    let nombre = `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
-    let region = '';
-    try {
-      const res  = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`
-      );
-      const data = await res.json();
-      const addr = data.address || {};
-      nombre = addr.city || addr.town || addr.village || addr.county || nombre;
-      region = [addr.state, addr.country].filter(Boolean).join(', ');
-    } catch { /* fallback a coordenadas si falla */ }
-    openPanel({ lat, lng }, nombre, region);
-  });
-
-  // Botón toggle de la capa lumínica
-  document.getElementById('layer-toggle-btn')?.addEventListener('click', () => {
-    lightLayerVisible = !lightLayerVisible;
-    if (lightLayerVisible) {
-      lightPollutionLayer.addTo(map);
-      document.getElementById('layer-toggle-btn').classList.add('active');
-      showToast('Capa lumínica activada');
-    } else {
-      map.removeLayer(lightPollutionLayer);
-      document.getElementById('layer-toggle-btn').classList.remove('active');
-      showToast('Capa lumínica oculta');
-    }
-  });
-
-  // Botón de geolocalización
-  document.getElementById('geolocate-btn')?.addEventListener('click', () => {
-    if (!navigator.geolocation) {
-      showToast('Geolocalización no disponible');
-      return;
-    }
-    const btn = document.getElementById('geolocate-btn');
-    btn.style.opacity = '0.5';
-    showToast('Buscando tu ubicación...');
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        btn.style.opacity = '1';
-        const { latitude: lat, longitude: lng } = pos.coords;
-        map.flyTo([lat, lng], 12, { duration: 1.5 });
-        openPanel({ lat, lng }, 'Mi ubicación', 'Colombia');
-      },
-      (err) => {
-        btn.style.opacity = '1';
-        map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, { duration: 1.5 });
-        const denied = err && err.code === err.PERMISSION_DENIED;
-        showToast(
-          denied
-            ? 'Permiso de ubicación denegado. Mostrando Villa de Leyva.'
-            : '📍 Mostrando Villa de Leyva (ubicación por defecto)'
-        );
-      },
-      { timeout: 8000, maximumAge: 60000 }
+    const place = await reverseGeocode(lat, lng);
+    openPanel(
+      { lat, lng },
+      place?.name || `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`,
+      place?.region || ''
     );
   });
 
@@ -189,6 +146,28 @@ export function initMap(owmApiKey = '', geeTileUrl = '') {
   document.getElementById('panel-close')?.addEventListener('click', closePanel);
 
   return map;
+}
+
+// ── Geocodificación inversa (Nominatim) ────────────────────────
+
+/**
+ * Nombre del lugar (municipio/ciudad) y región para unas coordenadas.
+ * @returns {Promise<{name: string, region: string}|null>} null si falla
+ */
+export async function reverseGeocode(lat, lng) {
+  try {
+    const res  = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`
+    );
+    const data = await res.json();
+    const addr = data.address || {};
+    return {
+      name:   addr.city || addr.town || addr.village || addr.county || '',
+      region: [addr.state, addr.country].filter(Boolean).join(', '),
+    };
+  } catch {
+    return null;
+  }
 }
 
 // ── Manejo de errores de teselas (RF10 / RNF09) ────────────────
@@ -221,8 +200,14 @@ function attachTileErrorHandler(layer, message) {
  * @param {string} nombre   - Nombre a mostrar en el encabezado del panel
  * @param {string} region   - Región/departamento
  * @param {Object} [spot]   - Objeto del catálogo si es un nodo registrado
+ * @param {Object}  [opts]
+ * @param {number}  [opts.zoom] - Volar a este zoom. Sin él, solo se
+ *   desplaza el mapa manteniendo el zoom actual. El movimiento se hace AQUÍ y no en
+ *   quien llama: un flyTo() previo quedaría cancelado por el desplazamiento.
+ * @param {boolean} [opts.pin]  - Marcar el punto con el pin de búsqueda.
+ *   Cualquier otra apertura (clic en mapa, marcador) retira el pin anterior.
  */
-export function openPanel(latlng, nombre, region, spot = null) {
+export function openPanel(latlng, nombre, region, spot = null, { zoom, pin = false } = {}) {
   document.getElementById('panel-location-name').textContent  = nombre;
   document.getElementById('panel-location-region').textContent = region;
 
@@ -236,13 +221,18 @@ export function openPanel(latlng, nombre, region, spot = null) {
 
   setGauge(null); // estado "cargando" mientras llega la respuesta del predictor
 
-  document.getElementById('side-panel').classList.add('open');
-  document.getElementById('side-panel').removeAttribute('aria-hidden');
+  const panel = document.getElementById('side-panel');
+  panel.classList.add('open');
+  panel.removeAttribute('aria-hidden');
+  panel.inert = false; // cerrado queda inert: fuera del orden de tabulación
   // Usado por el CSS mobile para reposicionar el widget de capas por
   // encima del bottom-sheet solo mientras el panel está abierto.
   document.body.classList.add('panel-open');
 
-  map.panTo([latlng.lat, latlng.lng], { animate: true, duration: 0.5 });
+  if (pin) placeSearchPin(latlng, nombre, region);
+  else     removeSearchPin();
+
+  focusPoint(latlng, zoom);
 
   // Evento que el predictor escucha para lanzar el cálculo
   document.dispatchEvent(
@@ -254,7 +244,63 @@ function closePanel() {
   const panel = document.getElementById('side-panel');
   panel.classList.remove('open');
   panel.setAttribute('aria-hidden', 'true');
+  panel.inert = true;
   document.body.classList.remove('panel-open');
+  removeSearchPin();
+}
+
+/**
+ * Lleva el mapa a un punto dejándolo visible FUERA del panel lateral: a la
+ * izquierda de él en escritorio y por encima del bottom-sheet en móvil.
+ * Centrarlo sin más lo dejaría tapado justo detrás del panel.
+ * @param {{ lat: number, lng: number }} latlng
+ * @param {number} [zoom] - si se da, vuela hasta ese zoom
+ */
+function focusPoint(latlng, zoom) {
+  const targetZoom = zoom ?? map.getZoom();
+  const panel  = document.getElementById('side-panel');
+  const offset = MOBILE_MQ.matches
+    ? L.point(0, panel.offsetHeight / 2)
+    : L.point(panel.offsetWidth / 2, 0);
+  const center = map.unproject(map.project(latlng, targetZoom).add(offset), targetZoom);
+
+  if (zoom) map.flyTo(center, targetZoom, { duration: 1.2 });
+  else      map.panTo(center, { animate: true, duration: 0.5 });
+}
+
+// ── Pin de búsqueda ────────────────────────────────────────────
+
+function placeSearchPin(latlng, nombre, region) {
+  removeSearchPin();
+  searchPin = L.marker([latlng.lat, latlng.lng], {
+    icon: L.divIcon({
+      className: 'search-pin',
+      html: `
+        <svg width="30" height="42" viewBox="0 0 30 42" aria-hidden="true">
+          <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 27 15 27s15-16.5 15-27C30 6.716 23.284 0 15 0z"/>
+          <circle cx="15" cy="15" r="5.5"/>
+        </svg>`,
+      iconSize:   [30, 42],
+      iconAnchor: [15, 42], // la punta del pin en la coordenada exacta
+    }),
+    title: nombre,
+    keyboard: false,
+    zIndexOffset: 1000, // por encima de los marcadores del catálogo
+  });
+  searchPin.bindTooltip(nombre, { direction: 'top', offset: [0, -42], className: 'gis-tooltip' });
+  // Volver a abrir la ficha del lugar si el usuario cerró el panel
+  searchPin.on('click', (e) => {
+    L.DomEvent.stopPropagation(e);
+    openPanel(latlng, nombre, region, null, { pin: true });
+  });
+  searchPin.addTo(map);
+}
+
+function removeSearchPin() {
+  if (searchPin) {
+    map.removeLayer(searchPin);
+    searchPin = null;
+  }
 }
 
 // ── Gauge de éxito ─────────────────────────────────────────────
@@ -366,20 +412,34 @@ export function showToast(message, duration = 2500) {
 /**
  * Selector de capas tipo Google Maps.
  * Gestiona dos dimensiones independientes:
- *   - Base map: oscuro (Esri Dark Gray Canvas) o satélite (Esri World Imagery)
+ *   - Base map: mapa (Esri Gray Canvas, oscuro o claro según el tema) o
+ *               satélite (Esri World Imagery)
  *   - Overlay:  ninguno, contaminación lumínica (GEE) o nubosidad (OWM)
+ * Los overlays se crean con zIndex 2, así quedan encima de cualquier base.
  */
-function buildLayerSwitcher(map, { darkBase, lightPollutionLayer, cloudsLayer, satelliteBase }) {
+function buildLayerSwitcher(map, { mapBases, lightPollutionLayer, cloudsLayer, satelliteBase }) {
 
-  // darkBase ya está añadido al mapa desde initMap(); se reutiliza la
-  // misma instancia aquí para no duplicar teselas.
+  // La base del tema activo ya está añadida desde initMap(); se reutilizan
+  // las mismas instancias aquí para no duplicar teselas.
+  const activeMapBase = () => mapBases[getTheme()];
 
   const lightAvailable  = Boolean(lightPollutionLayer);
   const cloudsAvailable = Boolean(cloudsLayer);
 
   // Estado inicial
-  let currentBase    = 'dark';                          // 'dark' | 'satellite'
+  let currentBase    = 'map';                           // 'map' | 'satellite'
   let currentOverlay = lightAvailable ? 'light' : 'none'; // 'none' | 'light' | 'clouds'
+
+  // Cambio de tema (theme.js): si el usuario está en la vista "Mapa",
+  // reemplazar las teselas oscuras por las claras o viceversa. En
+  // satélite no se toca nada; al volver a "Mapa" se usará la del tema.
+  document.addEventListener('gis:theme-change', () => {
+    if (currentBase !== 'map') return;
+    Object.values(mapBases).forEach((base) => {
+      if (map.hasLayer(base)) map.removeLayer(base);
+    });
+    activeMapBase().addTo(map);
+  });
 
   // RF01: la capa de contaminación lumínica es un compuesto histórico
   // anual, no una medición en tiempo real. Se avisa una sola vez por
@@ -394,7 +454,7 @@ function buildLayerSwitcher(map, { darkBase, lightPollutionLayer, cloudsLayer, s
   if (lightAvailable) setTimeout(showLightDisclaimer, 1500);
 
   const layers = [
-    { id: 'dark',      icon: '🌑', label: 'Cielo oscuro',   type: 'base' },
+    { id: 'map',       icon: '🗺️', label: 'Mapa',           type: 'base' },
     { id: 'satellite', icon: '🛰️', label: 'Satélite',       type: 'base' },
     {
       id: 'light', icon: '💡', label: 'Contaminación', type: 'overlay',
@@ -447,19 +507,14 @@ function buildLayerSwitcher(map, { darkBase, lightPollutionLayer, cloudsLayer, s
         if (id === currentBase) return;
 
         if (id === 'satellite') {
-          // Quitar base oscura (grupo Esri Dark Gray), añadir satélite
-          if (map.hasLayer(darkBase)) map.removeLayer(darkBase);
+          // Quitar el mapa (grupo Esri Gray Canvas del tema), añadir satélite
+          if (map.hasLayer(activeMapBase())) map.removeLayer(activeMapBase());
           satelliteBase.addTo(map);
           satelliteBase.setZIndex(1);
-          // Asegurar que los overlays activos queden encima
-          if (lightPollutionLayer && map.hasLayer(lightPollutionLayer)) lightPollutionLayer.setZIndex(2);
-          if (cloudsLayer && map.hasLayer(cloudsLayer)) cloudsLayer.setZIndex(2);
         } else {
-          // Quitar satélite, restaurar oscuro
+          // Quitar satélite, restaurar el mapa del tema activo
           if (map.hasLayer(satelliteBase)) map.removeLayer(satelliteBase);
-          darkBase.addTo(map);
-          if (lightPollutionLayer && map.hasLayer(lightPollutionLayer)) lightPollutionLayer.setZIndex(2);
-          if (cloudsLayer && map.hasLayer(cloudsLayer)) cloudsLayer.setZIndex(2);
+          activeMapBase().addTo(map);
         }
 
         currentBase = id;

@@ -13,16 +13,17 @@ global-illumination-spot/
 ├── .gitignore          → Excluye js/config.js (contiene credenciales/URLs reales)
 ├── css/
 │   └── styles.css      → Paleta de colores, tipografía, diseño completo,
-│                          incluye el tema del modo de observación nocturna
+│                          incluye la paleta del tema claro
 ├── js/
 │   ├── app.js           → Coordinador principal — importa y conecta todos los módulos
-│   ├── map.js            → Mapa Leaflet, capa lumínica, panel lateral, gauge, toasts
+│   ├── map.js            → Mapa Leaflet, selector de capas, panel lateral, gauge, toasts
 │   ├── markers.js        → Carga spots.json y pinta marcadores en el mapa
 │   ├── search.js         → Buscador de ubicaciones via Nominatim (OpenStreetMap)
+│   ├── locate.js         → "Mi ubicación": punto azul con seguimiento en vivo
 │   ├── predictor.js       → Algoritmo predictivo: Bortle + clima + luna → % éxito
 │   ├── simulator.js       → Sliders interactivos para simular condiciones
 │   ├── install.js         → Captura beforeinstallprompt y el botón de instalación
-│   ├── nightmode.js       → Alterna el modo de observación nocturna (paleta roja)
+│   ├── theme.js           → Alterna el tema claro/oscuro y lo persiste
 │   ├── config.example.js  → Plantilla de configuración (commiteada)
 │   └── config.js          → Configuración real con tu API key (NO se commitea)
 ├── data/
@@ -32,6 +33,19 @@ global-illumination-spot/
 └── assets/
     └── icons/          → Íconos PWA (generados por scripts/generate_icons.py)
 ```
+
+## Ejecutar en local
+
+La app usa módulos ES (`type="module"`) y un Service Worker, así que **no
+funciona abriendo `index.html` con doble clic** (`file://`). Hay que
+servirla por HTTP desde la raíz del proyecto, por ejemplo:
+
+```
+python -m http.server 8080
+```
+
+y abrir http://localhost:8080 (es el mismo puerto que usa la configuración
+de depuración de `.vscode/launch.json`).
 
 ## Configuración antes de desplegar
 
@@ -132,6 +146,11 @@ Requiere Python 3 y Pillow (`pip install pillow`). Genera `icon-192.png`,
 3. Definir las variables de entorno `OWM_API_KEY` y `GEE_TILE_URL` (ver sección anterior)
 4. Netlify detecta `netlify.toml`, ejecuta el build command y publica con HTTPS automático
 
+> **En cada nueva versión** cambiar `CACHE_NAME` en `sw.js` (ej. `gis-v2.1`
+> → `gis-v2.2`). Así el Service Worker se reinstala, borra la caché
+> anterior y los usuarios que ya instalaron la PWA reciben los archivos
+> nuevos.
+
 > El despliegue por arrastre de carpeta ("Deploys" → drag & drop) también
 > funciona, pero **no ejecuta el build command**: la app quedará en modo
 > demo hasta que subas manualmente un `js/config.js` con tu key.
@@ -188,10 +207,12 @@ Valores de `bortle_index`:
 ## Escala de colores de contaminación lumínica
 
 La capa superpuesta en el mapa usa un compuesto **histórico anual** (no en
-tiempo real) del dataset VIIRS/NASA vía Google Earth Engine:
-- **Negro/azul oscuro** → cielo muy oscuro (Bortle 1–3)
-- **Verde/amarillo** → contaminación moderada (Bortle 4–6)
-- **Naranja/rojo/blanco** → alta contaminación (Bortle 7–9)
+tiempo real) del dataset VIIRS/NASA vía Google Earth Engine. La
+correspondencia con la escala Bortle es orientativa (VIIRS mide radiancia,
+no brillo del cielo):
+- **Negro/azul oscuro** → cielo muy oscuro (≈ Bortle 1–3)
+- **Turquesa/amarillo** → contaminación moderada (≈ Bortle 4–6)
+- **Naranja/rojo/blanco** → alta contaminación (≈ Bortle 7–9)
 
 ## Algoritmo predictivo
 
@@ -203,6 +224,18 @@ Nubes_factor  = 100 - nubosidad_%         → 0% nubes = 100%, 100% nubes = 0%
 Luna_factor   = 100 - (luna_% × 0.7)     → Luna nueva = 100%, Luna llena = 30%
 ```
 
+Origen de cada dato:
+| Dato | Fuente |
+|---|---|
+| Nubosidad y temperatura | OpenWeatherMap (con `OWM_API_KEY`); sin key, valores simulados (modo demo) |
+| Iluminación y fase lunar | Cálculo local a partir del ciclo sinódico (no usa red) |
+| Bortle de un sitio del catálogo | `bortle_index` de `data/spots.json` |
+| Bortle de cualquier otro punto | API de lightpollutionmap.info; si falla, se usa Bortle 5 como valor conservador |
+
+> **Limitación conocida:** la API de lightpollutionmap.info hoy exige una
+> key (responde "Invalid or missing authentication"), así que para puntos
+> fuera del catálogo el Bortle mostrado es siempre el valor por defecto (5).
+
 | Resultado | Interpretación |
 |---|---|
 | ≥ 70% | ✦ Condiciones óptimas |
@@ -211,13 +244,32 @@ Luna_factor   = 100 - (luna_% × 0.7)     → Luna nueva = 100%, Luna llena = 30
 
 ## Funciones adicionales (v2)
 
+- **Buscador:** al elegir un resultado, el mapa vuela al lugar con un zoom
+  acorde a su tamaño (departamento, municipio o punto exacto), lo marca
+  con un pin rojo y abre su ficha, dejando el punto visible fuera del panel.
+  Al pulsar el buscador se despliegan las últimas 5 búsquedas (guardadas
+  solo en el dispositivo); elegir una no vuelve a consultar Nominatim, y
+  cada una se puede quitar con ✕ o borrar todo el historial.
+- **Mi ubicación:** el botón de la flecha muestra tu posición como un punto
+  azul con círculo de precisión (estilo Google Maps), que se actualiza
+  mientras te mueves; los clics siguientes re-centran el mapa. Sin permiso
+  o sin señal, el mapa va a Villa de Leyva y se avisa.
 - **Instalación como app (RF08):** botón de instalación en el header
   (aparece cuando el navegador dispara `beforeinstallprompt`; en iOS
   Safari se muestra una instrucción manual una sola vez).
-- **Modo de observación nocturna (RF09):** botón en el header que alterna
-  una paleta roja de bajo brillo (preserva la visión nocturna en campo) y
-  persiste la preferencia entre sesiones.
+- **Tema claro/oscuro (RF09):** en la primera visita se usa el tema del
+  sistema/navegador (y lo sigue en vivo); el botón del header (sol/luna)
+  permite fijar uno a mano, y esa elección pasa a tener prioridad.
+  Cambia toda la interfaz y el mapa base (Esri Gray Canvas oscuro/claro),
+  sin alterar marcadores ni capas de datos, y persiste la preferencia
+  entre sesiones. Sustituye al antiguo modo de observación nocturna
+  (paleta roja).
 - **Manejo de errores (RF10):** avisos no técnicos cuando falla el clima,
   el buscador o las teselas del mapa, sin bloquear el resto de la interfaz.
-- **Accesibilidad (RNF08):** navegación por teclado con foco visible,
-  skip-link al mapa, etiquetas ARIA en controles e íconos, contraste AA.
+- **Accesibilidad (RNF08):** navegación por teclado con foco visible
+  (incluidos los resultados del buscador), skip-link al mapa, panel
+  lateral fuera del orden de tabulación mientras está cerrado, etiquetas
+  ARIA en controles e íconos, contraste AA.
+- **Uso sin conexión:** el Service Worker precachea la app, el catálogo
+  de spots y Leaflet (cargado desde unpkg con verificación de integridad
+  SRI); las teselas ya vistas quedan disponibles sin señal.

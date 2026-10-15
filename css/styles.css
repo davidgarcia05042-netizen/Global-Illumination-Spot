@@ -25,36 +25,44 @@
   --radius:         10px;
   --radius-sm:      6px;
   --shadow:         0 4px 24px rgba(0,0,0,0.5);
+  --glass-header:   rgba(13, 27, 42, 0.92);
+  --glass-panel:    rgba(13, 27, 42, 0.97);
+  --glass-switcher: rgba(13, 27, 42, 0.90);
   --trans:          0.2s ease;
 }
 
-/* ── Modo de observación nocturna (RF09) ────────────────────────
-   Preserva la adaptación de la vista a la oscuridad reemplazando toda
-   la paleta por tonos rojos/negros puros (sin componente azul/verde),
-   práctica estándar en apps de astronomía de campo. Como el resto de
-   la hoja de estilos ya consume variables CSS, redefinirlas aquí
-   re-tematiza toda la interfaz sin tocar ninguna otra regla. */
-html.night-mode {
-  --bg-deep:        #0A0000;
-  --bg-panel:       #1A0505;
-  --bg-card:        #150404;
-  --bg-input:       #100303;
-  --accent:         #FF3B2E;
-  --accent-light:   #FF6A5C;
-  --accent-glow:    rgba(255, 59, 46, 0.25);
-  --text-primary:   #FF3B30;
-  --text-secondary: #C24437;
-  --good:           #FF7A5C;
-  --medium:         #E6402F;
-  --bad:            #8C2318;
-  --border:         rgba(255, 59, 46, 0.2);
-  --border-hover:   rgba(255, 59, 46, 0.5);
+/* ── Tema claro (RF09) ───────────────────────────────────────────
+   El tema por defecto es oscuro (pensado para uso nocturno). El claro
+   sirve para planificar de día. Como el resto de la hoja consume
+   variables CSS, redefinirlas aquí re-tematiza toda la interfaz; el mapa
+   base lo cambia map.js (teselas Esri Light Gray). Colores de texto
+   elegidos para contraste AA sobre fondo blanco. */
+html.light-theme {
+  --bg-deep:        #F4F7FA;
+  --bg-panel:       #FFFFFF;
+  --bg-card:        #EEF3F7;
+  --bg-input:       #FFFFFF;
+  --accent:         #1F6F94;
+  --accent-light:   #2E86AB;
+  --accent-glow:    rgba(31, 111, 148, 0.2);
+  --text-primary:   #0D1B2A;
+  --text-secondary: #3E5A6E;
+  --text-muted:     #6B8597;
+  --good:           #1E8449;
+  --medium:         #A86A0C;
+  --bad:            #C0392B;
+  --border:         rgba(31, 111, 148, 0.2);
+  --border-hover:   rgba(31, 111, 148, 0.45);
+  --shadow:         0 4px 24px rgba(13, 27, 42, 0.15);
+  --glass-header:   rgba(255, 255, 255, 0.92);
+  --glass-panel:    rgba(255, 255, 255, 0.97);
+  --glass-switcher: rgba(255, 255, 255, 0.92);
 }
 
-/* Las teselas de Leaflet no usan variables CSS: se tiñen con un filtro */
-html.night-mode #map {
-  filter: grayscale(0.2) sepia(0.7) hue-rotate(-50deg) saturate(2.4) brightness(0.55) contrast(1.15);
-}
+/* Botón de tema: muestra el sol en oscuro (pasar a claro) y la luna en claro */
+.theme-icon-moon                     { display: none; }
+html.light-theme .theme-icon-sun     { display: none; }
+html.light-theme .theme-icon-moon    { display: block; }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -102,7 +110,7 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: env(safe-area-inset-top) 16px 0;
-  background: rgba(13, 27, 42, 0.92);
+  background: var(--glass-header);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
@@ -217,6 +225,68 @@ html, body {
 .search-results li:last-child { border-bottom: none; }
 .search-results li:hover { background: var(--bg-card); color: var(--text-primary); }
 
+.search-results li.search-empty { color: var(--text-muted); cursor: default; }
+.search-results li.search-empty:hover { background: none; }
+
+/* ── Búsquedas recientes ── */
+.search-results li.search-section-title {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  cursor: default;
+  padding: 10px 14px 6px;
+}
+.search-results li.search-section-title:hover { background: none; }
+
+.search-results li.search-item-recent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 6px;
+}
+.search-item-icon { display: flex; flex-shrink: 0; color: var(--text-muted); }
+.search-item-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-item-remove {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background var(--trans), color var(--trans);
+}
+.search-item-remove:hover { background: var(--bg-deep); color: var(--bad); }
+
+.search-results li.search-clear { padding: 4px 8px; text-align: right; cursor: default; }
+.search-results li.search-clear:hover { background: none; }
+.search-clear button {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.search-clear button:hover { background: var(--bg-card); }
+
+@media (max-width: 640px) {
+  /* Blancos táctiles de 44px para quitar recientes */
+  .search-item-remove { width: 44px; height: 44px; }
+}
+
 /* ── Icon buttons ─────────────────────────────────────────────── */
 .icon-btn {
   width: 36px; height: 36px;
@@ -269,6 +339,69 @@ html, body {
   color: var(--text-primary) !important;
 }
 
+/* Pin del lugar elegido en el buscador: rojo, distinto de los marcadores
+   verde/naranja del catálogo, con una pequeña animación de caída */
+.search-pin svg {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+  animation: pin-drop 0.45s cubic-bezier(0.3, 1.4, 0.6, 1) both;
+  transform-origin: 50% 100%;
+}
+.search-pin path   { fill: #E5484D; stroke: #FFFFFF; stroke-width: 1.5; }
+.search-pin circle { fill: #FFFFFF; }
+
+@keyframes pin-drop {
+  from { transform: translateY(-18px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-pin svg { animation: none; }
+}
+
+/* "Mi ubicación" estilo Google Maps: punto azul con borde blanco, halo
+   pulsante y círculo de precisión. Azul fijo (no del tema) para que se
+   reconozca igual en tema claro, oscuro y satélite. */
+.locate-dot {
+  position: relative;
+  display: block;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #1A73E8;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.45);
+}
+.locate-dot::after {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: rgba(26, 115, 232, 0.35);
+  z-index: -1;
+  animation: locate-pulse 2s ease-out infinite;
+}
+@keyframes locate-pulse {
+  from { transform: scale(0.5); opacity: 1; }
+  to   { transform: scale(1.6); opacity: 0; }
+}
+.locate-accuracy {
+  stroke: #1A73E8;
+  stroke-opacity: 0.5;
+  stroke-width: 1;
+  fill: #1A73E8;
+  fill-opacity: 0.12;
+}
+
+/* Botón mientras espera el primer fix de GPS */
+.icon-btn.locating svg { animation: locating-blink 1s ease-in-out infinite; }
+@keyframes locating-blink { 50% { opacity: 0.3; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .locate-dot::after,
+  .icon-btn.locating svg { animation: none; }
+}
+
 .leaflet-popup-tip { background: var(--bg-panel) !important; }
 .leaflet-popup-close-button { color: var(--text-secondary) !important; }
 
@@ -279,7 +412,7 @@ html, body {
   width: var(--panel-w);
   height: calc(100vh - var(--header-h) - env(safe-area-inset-top));
   height: calc(100dvh - var(--header-h) - env(safe-area-inset-top));
-  background: rgba(13, 27, 42, 0.97);
+  background: var(--glass-panel);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-left: 1px solid var(--border);
@@ -551,6 +684,11 @@ html, body {
 .bortle-5, .bortle-6 { background: rgba(243,156,18,0.2); color: #F39C12; border: 1px solid #F39C12; }
 .bortle-7, .bortle-8, .bortle-9 { background: rgba(192,57,43,0.2); color: #C0392B; border: 1px solid #C0392B; }
 
+/* Sobre fondo claro el ámbar y el verde no alcanzan contraste AA */
+html.light-theme .bortle-1, html.light-theme .bortle-2 { color: #1E8449; border-color: #1E8449; }
+html.light-theme .bortle-3, html.light-theme .bortle-4 { color: #1F6F94; border-color: #1F6F94; }
+html.light-theme .bortle-5, html.light-theme .bortle-6 { color: #A86A0C; border-color: #A86A0C; }
+
 .obs-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
 
 .obs-tag {
@@ -579,7 +717,11 @@ html, body {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease, transform 0.25s ease;
-  white-space: nowrap;
+  /* Ancho según el texto, pero partiendo en líneas antes de salirse de
+     pantallas angostas (antes nowrap cortaba los avisos largos en móvil) */
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  text-align: center;
 }
 
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -654,13 +796,13 @@ html, body {
   z-index: 800;
   display: flex;
   gap: 6px;
-  background: rgba(13, 27, 42, 0.90);
+  background: var(--glass-switcher);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
   border-radius: 40px;
   padding: 6px 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  box-shadow: var(--shadow);
 }
 
 .layer-btn {
