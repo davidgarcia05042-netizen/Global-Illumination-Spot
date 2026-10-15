@@ -25,14 +25,19 @@ global-illumination-spot/
 │   ├── simulator.js       → Sliders interactivos para simular condiciones
 │   ├── install.js         → Captura beforeinstallprompt y el botón de instalación
 │   ├── theme.js           → Alterna el tema claro/oscuro y lo persiste
+│   ├── guide.js           → Guía de uso (RF13): diálogo, índice, lightbox, impresión
 │   ├── config.example.js  → Plantilla de configuración (commiteada)
 │   └── config.js          → Configuración real con tu API key (NO se commitea)
 ├── data/
 │   └── spots.json      → Catálogo de nodos de astroturismo en Colombia
+├── partials/
+│   └── guide.html      → Contenido de la guía de uso (se carga al abrirla)
 ├── scripts/
-│   └── generate_icons.py → Genera los PNG de assets/icons/ (Python + Pillow)
+│   ├── generate_icons.py → Genera los PNG de assets/icons/ (Python + Pillow)
+│   └── capture_guide.py  → Genera las capturas de assets/guide/ (Python + Playwright)
 └── assets/
-    └── icons/          → Íconos PWA (generados por scripts/generate_icons.py)
+    ├── icons/          → Íconos PWA (generados por scripts/generate_icons.py)
+    └── guide/          → Capturas de la guía, versión oscura y clara (WebP)
 ```
 
 ## Ejecutar en local
@@ -281,6 +286,16 @@ Origen de cada dato:
   sin alterar marcadores ni capas de datos, y persiste la preferencia
   entre sesiones. Sustituye al antiguo modo de observación nocturna
   (paleta roja).
+- **Guía de uso integrada (RF13):** el botón **?** del header (en
+  celulares, uno flotante bajo el zoom) abre un manual con índice, 13
+  secciones y capturas de la app en el tema activo; las imágenes se
+  amplían con un clic y algunas llevan pasos numerados. Se puede enlazar
+  a una sección (`#ayuda-capas`), funciona sin conexión tras la primera
+  visita y se imprime o exporta a PDF limpia (Ctrl + P con la guía
+  abierta). En la primera visita un aviso único señala el botón.
+  Las capturas se regeneran con `python scripts/capture_guide.py`
+  (requiere `pip install playwright` y el servidor local), con datos
+  fijos para que sean reproducibles.
 - **Manejo de errores (RF10):** avisos no técnicos cuando falla el clima,
   el buscador o las teselas del mapa, sin bloquear el resto de la interfaz.
 - **Accesibilidad (RNF08):** navegación por teclado con foco visible

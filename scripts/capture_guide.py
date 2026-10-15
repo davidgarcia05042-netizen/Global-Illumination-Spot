@@ -16,6 +16,8 @@ Uso:
   2. Ejecutar:       python scripts/capture_guide.py
      Opciones:       --channel chromium   usar el Chromium de Playwright
                      --quality 72         calidad WebP (por defecto 75)
+                     --actualizar-marcadores  corrige en partials/guide.html
+                                          las posiciones de los marcadores numerados
 
 Salida en assets/guide/<nombre>-dark.webp y <nombre>-light.webp (máx. 800 px
 de ancho), salvo tema.webp, que muestra los dos temas en una sola imagen.
@@ -42,6 +44,13 @@ Nitidez:
     cada recorte es de 800 px exactos, sin redimensionar.
   - Las de interfaz (panel, buscador, botones) se hacen a 2x y se reducen
     a 800 px de ancho como máximo.
+
+Marcadores numerados (círculos con el número del paso sobre algunas
+imágenes de la guía): STEP_TARGETS dice qué elemento señala cada paso. Al
+capturar se calcula su posición en % sobre la imagen y se compara con los
+<span class="guide-step"> de partials/guide.html; si la interfaz cambió y
+ya no coinciden, el informe final dice qué valores poner. Con
+--actualizar-marcadores el script los escribe en el HTML directamente.
 
 Notas:
   - Si js/config.js no existe, las capas de contaminación y nubosidad
@@ -110,6 +119,30 @@ TARGET_BYTES = int(1.5 * 1024 * 1024)
 # Resultados de Nominatim: <li> sin clase (los de recientes, el título y
 # "Borrar historial" sí la llevan)
 RESULT_ITEM = '#search-results li:not([class])'
+
+# Marcadores numerados por imagen: (selector CSS, índice entre los que
+# coinciden, fx, fy, dx, dy). (fx, fy) es el punto del elemento donde se
+# centra el círculo, en fracción de su ancho y alto ((0, 0.5) = mitad del
+# borde izquierdo); (dx, dy) lo corre en px para no tapar lo que señala
+# (-16: a la izquierda del elemento, en el espacio libre)
+STEP_TARGETS = {
+    'buscador': [('#search-input', 0, 0, 0.5, 0, 0),           # 1 la barra
+                 ('#search-btn', 0, 0, 0.5, -16, 0),           # 2 la lupa
+                 (RESULT_ITEM, 0, 0, 0.5, 0, 0)],              # 3 un resultado
+    'recientes': [('.search-item-recent', 0, 0, 0.5, 0, 0),    # 1 una búsqueda
+                  ('.search-item-remove', 0, 0, 0.5, -16, 0),  # 2 su ✕
+                  ('.search-clear button', 0, 0, 0.5, -16, 0)],  # 3 Borrar historial
+    'panel': [('.success-gauge', 0, 0, 0, 0, 0),               # 1 porcentaje de éxito
+              ('#side-panel .panel-section', 0, 0, 0, 0, 0),   # 2 condiciones actuales
+              ('#side-panel .panel-section', 1, 0, 0, 0, 0),   # 3 simulador
+              ('#spot-info-section', 0, 0, 0, 0, 0)],          # 4 ficha del sitio
+    'simulador': [('#sim-clouds-val', 0, 0, 0.5, -16, 0),      # 1 valores reales
+                  ('#sim-bortle', 0, 0, 0.5, 0, 0),            # 2 mover un control
+                  ('.sim-result', 0, 0, 0.5, 0, 0)],           # 3 resultado simulado
+    'instalar': [('#install-btn', 0, 0, 0, 0, 0)],             # 1 botón instalar
+}
+STEP_TOLERANCE = 1.5  # puntos porcentuales de diferencia admitidos
+GUIDE_HTML = ROOT / 'partials' / 'guide.html'
 
 # Historial precargado para la captura de búsquedas recientes (mismo
 # formato que guarda search.js)
@@ -336,6 +369,47 @@ def close_panel(page):
         page.wait_for_timeout(500)
 
 
+def record_steps(page, name, clip, found):
+    """Posición en % sobre el recorte de cada marcador numerado de `name`."""
+    if name not in STEP_TARGETS or name in found:
+        return
+    points = []
+    for selector, index, fx, fy, dx, dy in STEP_TARGETS[name]:
+        r = rects_of(page, selector)[index]
+        points.append((round((r['x'] + fx * r['width'] + dx - clip['x']) / clip['width'] * 100, 1),
+                       round((r['y'] + fy * r['height'] + dy - clip['y']) / clip['height'] * 100, 1)))
+    found[name] = points
+
+
+def check_steps(found, update=False):
+    """Compara las posiciones calculadas con las de partials/guide.html y,
+    con `update`, reescribe las que no coinciden."""
+    html = GUIDE_HTML.read_text(encoding='utf8')
+    changed = False
+    print('\nMarcadores numerados (partials/guide.html):')
+    for name, points in found.items():
+        block = re.search(rf'data-shot="{name}"(.*?)</div>', html, re.S)
+        current = re.findall(r'left: ([\d.]+)%; top: ([\d.]+)%', block.group(1)) if block else []
+        current = [(float(x), float(y)) for x, y in current]
+        ok = len(current) == len(points) and all(
+            abs(cx - x) <= STEP_TOLERANCE and abs(cy - y) <= STEP_TOLERANCE
+            for (cx, cy), (x, y) in zip(current, points))
+        if ok:
+            print(f'  {name:12s} OK')
+        elif update and block and len(current) == len(points):
+            values = iter(points)
+            fixed = re.sub(r'left: [\d.]+%; top: [\d.]+%',
+                           lambda _: 'left: {}%; top: {}%'.format(*next(values)), block.group(0))
+            html = html.replace(block.group(0), fixed)
+            changed = True
+            print(f'  {name:12s} actualizado')
+        else:
+            print(f'  ! {name:10s} actualizar a: ' +
+                  '  '.join(f'{n}) left: {x}%; top: {y}%' for n, (x, y) in enumerate(points, 1)))
+    if changed:
+        GUIDE_HTML.write_text(html, encoding='utf8')
+
+
 class Results:
     """Guarda las capturas en WebP y lleva la cuenta para el informe final."""
 
@@ -427,24 +501,28 @@ def capture_map_shots(browser, theme, out):
     page.context.close()
 
 
-def capture_ui_shots(browser, theme, out):
+def capture_ui_shots(browser, theme, out, steps):
     """Capturas de interfaz: densidad 2, reducidas a 800 px de ancho como máximo.
-    Devuelve el PNG del header para componer tema.webp."""
+    Anota en `steps` la posición de los marcadores numerados. Devuelve el
+    PNG del header para componer tema.webp."""
     page = open_app(browser, theme, UI_VIEWPORT, UI_SCALE)
-    shot = lambda png, name: out.save(png, f'{name}-{theme}.webp')
+
+    def shot(clip, name):
+        record_steps(page, name, clip, steps)
+        out.save(page.screenshot(clip=clip), f'{name}-{theme}.webp')
 
     # 1. Búsquedas recientes: campo vacío y enfocado (historial precargado)
     only_controls(page, '.search-wrapper')
     page.focus('#search-input')
     page.wait_for_selector('#search-results .search-item-recent', timeout=5000)
     page.wait_for_timeout(300)
-    shot(page.screenshot(clip=union_clip(page, ['.search-wrapper', '#search-results'], pad=12)), 'recientes')
+    shot(union_clip(page, ['.search-wrapper', '#search-results'], pad=12), 'recientes')
 
     # 2. Buscador con resultados
     page.fill('#search-input', 'Villa de Leyva')
     page.wait_for_selector(RESULT_ITEM, timeout=15000)
     page.wait_for_timeout(400)
-    shot(page.screenshot(clip=union_clip(page, ['.search-wrapper', '#search-results'], pad=12)), 'buscador')
+    shot(union_clip(page, ['.search-wrapper', '#search-results'], pad=12), 'buscador')
     page.keyboard.press('Escape')
     page.fill('#search-input', '')
     page.locator('#search-input').blur()
@@ -463,8 +541,7 @@ def capture_ui_shots(browser, theme, out):
     panel = rect_of(page, '#side-panel')
     last = rects_of(page, '#side-panel > :not([hidden])')[-1]
     bottom = last['y'] + last['height'] + 32  # padding inferior del panel
-    shot(page.screenshot(clip={'x': panel['x'], 'y': panel['y'],
-                               'width': panel['width'], 'height': bottom - panel['y']}), 'panel')
+    shot({'x': panel['x'], 'y': panel['y'], 'width': panel['width'], 'height': bottom - panel['y']}, 'panel')
 
     # 4. Secciones del panel con 16 px de su propio fondo alrededor. Antes,
     #    ningún hijo debe salirse por la derecha (se cortaría en el recorte)
@@ -478,8 +555,8 @@ def capture_ui_shots(browser, theme, out):
         if spill:
             print(f'  ! en "{name}" se salen por la derecha: {spill}')
         box = section.bounding_box()
-        shot(page.screenshot(clip={'x': box['x'] - 16, 'y': box['y'] - 16,
-                                   'width': box['width'] + 32, 'height': box['height'] + 32}), name)
+        shot({'x': box['x'] - 16, 'y': box['y'] - 16,
+              'width': box['width'] + 32, 'height': box['height'] + 32}, name)
     close_panel(page)
     page.set_viewport_size(UI_VIEWPORT)
     page.wait_for_timeout(300)
@@ -495,11 +572,10 @@ def capture_ui_shots(browser, theme, out):
     #    el fondo del header como marco. El botón instalar solo aparece
     #    cuando el navegador ofrece instalar: se muestra a la fuerza
     only_controls(page, '#guide-btn')
-    shot(page.screenshot(clip=union_clip(page, ['#guide-btn'], pad=12, within='.app-header')), 'guia-boton')
+    shot(union_clip(page, ['#guide-btn'], pad=12, within='.app-header'), 'guia-boton')
     page.evaluate("document.getElementById('install-btn').hidden = false")
     only_controls(page, '#guide-btn', '#theme-btn', '#install-btn')
-    shot(page.screenshot(clip=union_clip(page, ['#guide-btn', '#install-btn'], pad=12,
-                                         within='.app-header')), 'instalar')
+    shot(union_clip(page, ['#guide-btn', '#install-btn'], pad=12, within='.app-header'), 'instalar')
 
     page.context.close()
     return header_png
@@ -528,6 +604,8 @@ def main():
     parser.add_argument('--channel', default='chrome',
                         help='navegador: "chrome" (instalado, por defecto) o "chromium" (de Playwright)')
     parser.add_argument('--quality', type=int, default=75, help='calidad WebP (0-100)')
+    parser.add_argument('--actualizar-marcadores', action='store_true',
+                        help='escribir en partials/guide.html las posiciones de los marcadores numerados')
     args = parser.parse_args()
 
     if not server_is_up():
@@ -540,6 +618,7 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     out = Results(args.quality)
     headers = {}
+    steps = {}
     with sync_playwright() as p:
         try:
             browser = p.chromium.launch(channel=None if args.channel == 'chromium' else args.channel)
@@ -549,13 +628,14 @@ def main():
         for theme in ('dark', 'light'):
             print(f'\nTema {"oscuro" if theme == "dark" else "claro"}:')
             capture_map_shots(browser, theme, out)
-            headers[theme] = capture_ui_shots(browser, theme, out)
+            headers[theme] = capture_ui_shots(browser, theme, out, steps)
             capture_mobile_shot(browser, theme, out)
         print('\nAmbos temas:')
         compose_theme(headers, out)
         browser.close()
 
     out.report()
+    check_steps(steps, update=args.actualizar_marcadores)
 
 
 if __name__ == '__main__':

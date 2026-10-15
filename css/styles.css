@@ -10,6 +10,7 @@
   --accent:         #2E86AB;
   --accent-light:   #5BA3C2;
   --accent-glow:    rgba(46, 134, 171, 0.25);
+  --on-accent:      #FFFFFF;               /* texto sobre fondo --accent */
   --text-primary:   #E8F4F8;
   --text-secondary: #8BAFC1;
   --text-muted:     #4A6B80;
@@ -47,6 +48,7 @@ html.light-theme {
   --accent:         #1F6F94;
   --accent-light:   #2E86AB;
   --accent-glow:    rgba(31, 111, 148, 0.2);
+  --on-accent:      #FFFFFF;
   --text-primary:   #0D1B2A;
   --text-secondary: #3E5A6E;
   --text-muted:     #6B8597;
@@ -1284,6 +1286,63 @@ html.light-theme .guide-figure .guide-img-light { display: block; }
 /* Capturas altas: más angostas para no ocupar varias pantallas */
 .guide-figures--tall .guide-figure { flex: 0 1 200px; }
 
+/* Imágenes ampliables (guide.js les da tabindex y role="button") */
+.guide-figure img[role="button"] { cursor: zoom-in; }
+.guide-figure img[role="button"]:focus-visible { outline: 2px solid var(--accent-light); outline-offset: 2px; }
+
+/* Marcadores numerados: círculos con el número del paso, en % sobre un
+   wrapper relativo del tamaño de la imagen, así escalan con ella.
+   capture_guide.py calcula las posiciones y avisa si quedan desfasadas. */
+.guide-shot {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+}
+.guide-step {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 700 12px/22px var(--font-body);
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--bg-panel), var(--shadow);
+  pointer-events: none; /* el clic llega a la imagen (lightbox) */
+}
+
+/* Lightbox: la imagen ampliada se muestra dentro del mismo <dialog>, sobre
+   el índice y el contenido (que quedan inert). Esc vuelve a la guía. */
+.guide-lightbox {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 56px 20px 16px;
+  overflow: auto;
+  background: var(--bg-deep);
+  cursor: zoom-out;
+  animation: guide-fade 0.2s ease;
+}
+.guide-lightbox[hidden] { display: none; }
+.guide-lightbox-close { position: absolute; top: 10px; right: 12px; }
+.guide-lightbox .guide-shot { margin: auto; }  /* centra sin recortar si es más alta que el área */
+.guide-lightbox img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.guide-lightbox-caption {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
 .guide-status { padding: 48px 0; text-align: center; color: var(--text-secondary); }
 .guide-retry {
   margin-top: 14px;
@@ -1330,7 +1389,7 @@ html.light-theme .guide-figure .guide-img-light { display: block; }
     background: var(--bg-deep);
   }
   .guide-toc-link.is-active {
-    color: #fff;
+    color: var(--on-accent);
     background: var(--accent);
     border-color: var(--accent);
     box-shadow: none;
@@ -1343,4 +1402,90 @@ html.light-theme .guide-figure .guide-img-light { display: block; }
   .guide-dialog::backdrop { animation: none; }
   .guide-toc-link,
   .guide-fab             { transition: none; }
+  .guide-lightbox        { animation: none; }
+}
+
+/* ── Impresión de la guía (RF13) ─────────────────────────────────
+   Solo con la guía abierta: se imprime su contenido y nada más, con el
+   índice como tabla de contenido y las imágenes del tema claro, sin
+   cortar figuras. Los colores salen de la paleta clara aunque la app
+   esté en tema oscuro (en papel no se imprimen los fondos). Sin la guía
+   abierta, la impresión de la app no cambia. */
+@media print {
+  /* Paleta clara en toda la página (también el fondo de body, por si se
+     imprime con "gráficos de fondo" activado) */
+  html:has(.guide-dialog[open]) {
+    --bg-deep:        #FFFFFF;
+    --bg-panel:       #FFFFFF;
+    --bg-card:        #EEF3F7;
+    --text-primary:   #0D1B2A;
+    --text-secondary: #3E5A6E;
+    --accent:         #1F6F94;
+    --accent-light:   #2E86AB;
+    --border:         rgba(31, 111, 148, 0.2);
+    --on-accent:      #FFFFFF;
+  }
+  body:has(> .guide-dialog[open]) > :not(.guide-dialog) { display: none !important; }
+
+  .guide-dialog[open] {
+    position: static;
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: none;
+    overflow: visible;
+    animation: none;
+  }
+  .guide-dialog::backdrop { background: none; }
+  .guide-close,
+  .guide-lightbox,
+  .guide-retry { display: none !important; }
+
+  .guide-header { padding: 0 0 12px; border: none; }
+  .guide-title  { font-size: 22px; color: var(--text-primary); }
+
+  .guide-toc {
+    overflow: visible;
+    padding: 0;
+    border: none;
+    background: none;
+    break-after: page;
+  }
+  .guide-toc::before {
+    content: "Contenido";
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .guide-toc-list { flex-direction: column; width: auto; list-style: decimal inside; }
+  .guide-toc-link,
+  .guide-toc-link.is-active {
+    display: inline;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    font-weight: 400;
+    white-space: normal;
+    color: var(--text-primary);
+  }
+
+  .guide-content { overflow: visible; padding: 0; color: var(--text-secondary); }
+  .guide-content section:first-child { padding-top: 0; }
+  .guide-content h2,
+  .guide-content h3 { break-after: avoid; }
+  .guide-figure,
+  .guide-figures,
+  .guide-content tr { break-inside: avoid; }
+
+  .guide-figure .guide-img-dark  { display: none !important; }
+  .guide-figure .guide-img-light { display: block !important; }
+  .guide-figure img { max-height: 16cm; width: auto; }
 }

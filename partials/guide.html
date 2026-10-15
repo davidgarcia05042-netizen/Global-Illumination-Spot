@@ -13,6 +13,9 @@
   tema activo. width/height son el tamaño de presentación (las capturas de
   interfaz están a 2x, así que valen la mitad del archivo) y reservan el
   espacio antes de que carguen (loading="lazy").
+  Marcadores numerados: <div class="guide-shot" data-shot="<nombre>"> con
+  <span class="guide-step"> en % de la imagen; capture_guide.py calcula las
+  posiciones y avisa si alguna quedó desfasada.
 -->
 
 <section id="ayuda-que-es">
@@ -26,6 +29,8 @@
   <ul>
     <li>Usa el índice para saltar a lo que necesites. En el celular está arriba, como una fila de botones que puedes deslizar.</li>
     <li>Cada sección se entiende sola: no hace falta leerlas en orden.</li>
+    <li>Toca una imagen para verla más grande; tócala otra vez o pulsa <strong>Esc</strong> para volver. Los círculos con números señalan el paso del mismo número.</li>
+    <li>Para guardarla en PDF o imprimirla, ábrela y usa <strong>Imprimir</strong> en el menú del navegador (<strong>Ctrl + P</strong> en computador).</li>
     <li>Puedes volver a abrir la guía cuando quieras con el botón <strong>?</strong>. En el celular está en el mapa, debajo de los botones <strong>+</strong> y <strong>−</strong>, y se oculta mientras el panel de análisis está abierto.</li>
   </ul>
   <figure class="guide-figure">
@@ -66,11 +71,16 @@
     <li>Elige un resultado de la lista. El mapa vuela hasta ese lugar, lo marca con un <strong>pin rojo</strong> y abre su análisis.</li>
   </ol>
   <figure class="guide-figure">
-    <img class="guide-img-dark" src="assets/guide/buscador-dark.webp" width="368" height="101"
-         alt="Barra de búsqueda con el texto «Villa de Leyva» y debajo un resultado: Villa de Leyva, Ricaurte, Boyacá." loading="lazy" decoding="async">
-    <img class="guide-img-light" src="assets/guide/buscador-light.webp" width="368" height="101"
-         alt="Barra de búsqueda con el texto «Villa de Leyva» y debajo un resultado: Villa de Leyva, Ricaurte, Boyacá." loading="lazy" decoding="async">
-    <figcaption>Al escribir aparecen los lugares que coinciden.</figcaption>
+    <div class="guide-shot" data-shot="buscador">
+      <img class="guide-img-dark" src="assets/guide/buscador-dark.webp" width="368" height="101"
+           alt="Barra de búsqueda con el texto «Villa de Leyva» y debajo un resultado: Villa de Leyva, Ricaurte, Boyacá." loading="lazy" decoding="async">
+      <img class="guide-img-light" src="assets/guide/buscador-light.webp" width="368" height="101"
+           alt="Barra de búsqueda con el texto «Villa de Leyva» y debajo un resultado: Villa de Leyva, Ricaurte, Boyacá." loading="lazy" decoding="async">
+      <span class="guide-step" style="left: 3.3%; top: 27.1%" aria-hidden="true">1</span>
+      <span class="guide-step" style="left: 83.7%; top: 27.1%" aria-hidden="true">2</span>
+      <span class="guide-step" style="left: 3.5%; top: 69.5%" aria-hidden="true">3</span>
+    </div>
+    <figcaption>Al escribir aparecen los lugares que coinciden: (1) la barra, (2) la lupa y (3) un resultado.</figcaption>
   </figure>
   <p>
     La búsqueda empieza por Colombia. Si no encuentra nada allí, busca en el resto del mundo.
@@ -87,17 +97,22 @@
     <figcaption>Tras elegir un resultado: el pin rojo marca el lugar y el panel muestra su análisis.</figcaption>
   </figure>
   <h3>Búsquedas recientes</h3>
-  <ul>
+  <ol>
     <li>Al tocar la barra de búsqueda verás tus <strong>últimas 5 búsquedas</strong>. Toca una para volver a ese lugar al instante.</li>
     <li>Para quitar una sola, toca la <strong>✕</strong> a su derecha.</li>
     <li>Para quitarlas todas, toca <strong>Borrar historial</strong>.</li>
-  </ul>
+  </ol>
   <figure class="guide-figure">
-    <img class="guide-img-dark" src="assets/guide/recientes-dark.webp" width="368" height="279"
-         alt="Lista bajo la barra de búsqueda con el título «Búsquedas recientes», tres lugares con un reloj a la izquierda y una equis a la derecha, y el enlace «Borrar historial»." loading="lazy" decoding="async">
-    <img class="guide-img-light" src="assets/guide/recientes-light.webp" width="368" height="279"
-         alt="Lista bajo la barra de búsqueda con el título «Búsquedas recientes», tres lugares con un reloj a la izquierda y una equis a la derecha, y el enlace «Borrar historial»." loading="lazy" decoding="async">
-    <figcaption>Las búsquedas recientes aparecen al tocar la barra vacía.</figcaption>
+    <div class="guide-shot" data-shot="recientes">
+      <img class="guide-img-dark" src="assets/guide/recientes-dark.webp" width="368" height="279"
+           alt="Lista bajo la barra de búsqueda con el título «Búsquedas recientes», tres lugares con un reloj a la izquierda y una equis a la derecha, y el enlace «Borrar historial»." loading="lazy" decoding="async">
+      <img class="guide-img-light" src="assets/guide/recientes-light.webp" width="368" height="279"
+           alt="Lista bajo la barra de búsqueda con el título «Búsquedas recientes», tres lugares con un reloj a la izquierda y una equis a la derecha, y el enlace «Borrar historial»." loading="lazy" decoding="async">
+      <span class="guide-step" style="left: 3.5%; top: 39.0%" aria-hidden="true">1</span>
+      <span class="guide-step" style="left: 82.9%; top: 38.8%" aria-hidden="true">2</span>
+      <span class="guide-step" style="left: 63.6%; top: 89.1%" aria-hidden="true">3</span>
+    </div>
+    <figcaption>Las búsquedas recientes aparecen al tocar la barra vacía: (1) volver a un lugar, (2) quitarlo y (3) borrar todo.</figcaption>
   </figure>
   <p>Tus búsquedas recientes se guardan solo en este dispositivo y navegador.</p>
 </section>
@@ -231,11 +246,17 @@
   </p>
   <div class="guide-figures guide-figures--tall">
     <figure class="guide-figure">
-      <img class="guide-img-dark" src="assets/guide/panel-dark.webp" width="340" height="1170"
-           alt="Panel de Villa de Leyva: un círculo verde con 81 % de éxito, cuatro tarjetas de condiciones, tres controles deslizantes del simulador y la ficha del sitio." loading="lazy" decoding="async">
-      <img class="guide-img-light" src="assets/guide/panel-light.webp" width="340" height="1170"
-           alt="Panel de Villa de Leyva: un círculo verde con 81 % de éxito, cuatro tarjetas de condiciones, tres controles deslizantes del simulador y la ficha del sitio." loading="lazy" decoding="async">
-      <figcaption>En computador, el panel completo a la derecha.</figcaption>
+      <div class="guide-shot" data-shot="panel">
+        <img class="guide-img-dark" src="assets/guide/panel-dark.webp" width="340" height="1170"
+             alt="Panel de Villa de Leyva: un círculo verde con 81 % de éxito, cuatro tarjetas de condiciones, tres controles deslizantes del simulador y la ficha del sitio." loading="lazy" decoding="async">
+        <img class="guide-img-light" src="assets/guide/panel-light.webp" width="340" height="1170"
+             alt="Panel de Villa de Leyva: un círculo verde con 81 % de éxito, cuatro tarjetas de condiciones, tres controles deslizantes del simulador y la ficha del sitio." loading="lazy" decoding="async">
+        <span class="guide-step" style="left: 6.2%; top: 6.5%" aria-hidden="true">1</span>
+        <span class="guide-step" style="left: 6.2%; top: 20.7%" aria-hidden="true">2</span>
+        <span class="guide-step" style="left: 6.2%; top: 41.0%" aria-hidden="true">3</span>
+        <span class="guide-step" style="left: 6.2%; top: 65.3%" aria-hidden="true">4</span>
+      </div>
+      <figcaption>En computador, a la derecha: (1) porcentaje de éxito, (2) condiciones actuales, (3) simulador y (4) ficha del sitio.</figcaption>
     </figure>
     <figure class="guide-figure">
       <img class="guide-img-dark" src="assets/guide/movil-dark.webp" width="375" height="812"
@@ -330,11 +351,16 @@
     <li>El <strong>Resultado simulado</strong> cambia al instante, en verde, ámbar o rojo con los mismos rangos del porcentaje de éxito.</li>
   </ol>
   <figure class="guide-figure">
-    <img class="guide-img-dark" src="assets/guide/simulador-dark.webp" width="331" height="296"
-         alt="Sección Simulador con tres controles deslizantes (nubosidad 10 %, Bortle 4, iluminación lunar 0 %) y el resultado simulado de 81 % en verde." loading="lazy" decoding="async">
-    <img class="guide-img-light" src="assets/guide/simulador-light.webp" width="331" height="296"
-         alt="Sección Simulador con tres controles deslizantes (nubosidad 10 %, Bortle 4, iluminación lunar 0 %) y el resultado simulado de 81 % en verde." loading="lazy" decoding="async">
-    <figcaption>Mueve los controles y mira cómo cambia el resultado simulado.</figcaption>
+    <div class="guide-shot" data-shot="simulador">
+      <img class="guide-img-dark" src="assets/guide/simulador-dark.webp" width="331" height="296"
+           alt="Sección Simulador con tres controles deslizantes (nubosidad 10 %, Bortle 4, iluminación lunar 0 %) y el resultado simulado de 81 % en verde." loading="lazy" decoding="async">
+      <img class="guide-img-light" src="assets/guide/simulador-light.webp" width="331" height="296"
+           alt="Sección Simulador con tres controles deslizantes (nubosidad 10 %, Bortle 4, iluminación lunar 0 %) y el resultado simulado de 81 % en verde." loading="lazy" decoding="async">
+      <span class="guide-step" style="left: 84.2%; top: 24.3%" aria-hidden="true">1</span>
+      <span class="guide-step" style="left: 4.8%; top: 52.7%" aria-hidden="true">2</span>
+      <span class="guide-step" style="left: 4.8%; top: 86.5%" aria-hidden="true">3</span>
+    </div>
+    <figcaption>(1) Los controles empiezan con los valores reales, (2) muévelos y (3) mira el resultado simulado.</figcaption>
   </figure>
   <p>
     El simulador no cambia el porcentaje principal: ese siempre muestra las condiciones reales.
@@ -387,11 +413,14 @@
     <li>Tócalo y confirma en la ventana que muestra el navegador.</li>
   </ol>
   <figure class="guide-figure">
-    <img class="guide-img-dark" src="assets/guide/instalar-dark.webp" width="148" height="56"
-         alt="Tres botones redondos de la barra superior: signo de interrogación, tema y una flecha hacia abajo sobre una bandeja." loading="lazy" decoding="async">
-    <img class="guide-img-light" src="assets/guide/instalar-light.webp" width="148" height="56"
-         alt="Tres botones redondos de la barra superior: signo de interrogación, tema y una flecha hacia abajo sobre una bandeja." loading="lazy" decoding="async">
-    <figcaption>El botón de instalar es el de la flecha hacia abajo, a la derecha.</figcaption>
+    <div class="guide-shot" data-shot="instalar">
+      <img class="guide-img-dark" src="assets/guide/instalar-dark.webp" width="148" height="56"
+           alt="Tres botones redondos de la barra superior: signo de interrogación, tema y una flecha hacia abajo sobre una bandeja." loading="lazy" decoding="async">
+      <img class="guide-img-light" src="assets/guide/instalar-light.webp" width="148" height="56"
+           alt="Tres botones redondos de la barra superior: signo de interrogación, tema y una flecha hacia abajo sobre una bandeja." loading="lazy" decoding="async">
+      <span class="guide-step" style="left: 67.6%; top: 17.0%" aria-hidden="true">1</span>
+    </div>
+    <figcaption>(1) El botón de instalar es el de la flecha hacia abajo, a la derecha.</figcaption>
   </figure>
   <h3>iPhone y iPad (Safari)</h3>
   <ol>

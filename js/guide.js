@@ -11,17 +11,30 @@
  *    resalta la sección visible (IntersectionObserver) y hace scroll suave
  *  - Enlace directo: #ayuda o #ayuda-<seccion> abre la guía al cargar; al
  *    cerrar se limpia el hash con history.replaceState (sin recargar)
+ *  - Lightbox: clic (o Enter) en una imagen la amplía dentro del mismo
+ *    diálogo; Esc vuelve a la guía en vez de cerrarla
+ *  - Impresión: el CSS de impresión usa las imágenes del tema claro; se
+ *    precargan al abrir la guía (con loading="lazy" no estarían al imprimir)
+ *  - Aviso de primera visita: un único toast que señala el botón "?"
  *
- * Funcionalidad aislada: no toca el mapa, el panel ni los eventos gis:*.
+ * Funcionalidad aislada: no toca el mapa, el panel ni los eventos gis:*
+ * (de map.js solo usa showToast para el aviso).
  */
 
-import { icon } from './icons.js';
+import { icon }      from './icons.js';
+import { showToast } from './map.js';
 
 const PARTIAL_URL    = 'partials/guide.html';
 const HASH           = 'ayuda';
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
 const FOCUSABLE      = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 const SCROLL_LOCK_MS = 900; // tras saltar a una sección, ignorar el observer mientras dura el scroll
+const HINT_KEY       = 'gis-guide-hint';
+// El aviso espera a que pase el de la capa lumínica (map.js: 1,5 s + 3,5 s)
+// y, si en ese momento hay otro toast visible, lo reintenta un poco después
+const HINT_DELAY_MS  = 5500;
+const HINT_RETRY_MS  = 2000;
+const HINT_TRIES     = 5;
 
 let dialog     = null;
 let contentEl  = null;
@@ -33,6 +46,8 @@ let loading    = null;  // promesa de carga en curso o resuelta (null = reintent
 let observer   = null;
 let scrollLock = null;  // id de la sección a la que se está haciendo scroll
 let activeId   = null;  // sección resaltada ahora en el índice
+let lightbox   = null;  // capa de imagen ampliada (se crea al primer uso)
+let zoomedImg  = null;  // imagen que abrió el lightbox: recibe el foco al volver
 
 export function initGuide() {
   dialog    = document.getElementById('guide-dialog');
@@ -56,9 +71,13 @@ export function initGuide() {
     const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
     if (!inside) dialog.close();
   });
-  dialog.addEventListener('keydown', trapFocus);
+  dialog.addEventListener('keydown', onDialogKeydown);
   dialog.addEventListener('close', onClose);   // Esc dispara 'cancel' y luego 'close'
   contentEl.addEventListener('scroll', onContentScroll, { passive: true });
+  contentEl.addEventListener('click', onContentClick);
+  window.addEventListener('beforeprint', loadPrintImages);
+
+  scheduleFirstVisitHint();
 
   // Enlace directo al cargar, y si el hash cambia con la app abierta
   openFromHash();
@@ -108,6 +127,7 @@ function visibleGuideButton() {
  * @param {HTMLElement} [from]    - botón que la abre (para devolverle el foco)
  */
 async function openGuide(sectionId, from) {
+  markHintSeen(); // ya encontró la guía: el aviso de primera visita sobra
   if (!dialog.open) {
     opener = from || visibleGuideButton();
     dialog.showModal();
@@ -123,6 +143,7 @@ async function openGuide(sectionId, from) {
 }
 
 function onClose() {
+  closeLightbox(false);
   // El observer sigue conectado: con el diálogo cerrado no reporta nada y
   // al reabrir vuelve a resaltar sin reconstruir el índice
   // Quitar #ayuda... de la URL sin recargar ni crear entrada en el historial
@@ -150,11 +171,24 @@ function openFromHash() {
   openGuide(id); // '' = inicio de la guía (no convertir a null)
 }
 
+function onDialogKeydown(e) {
+  // Con el lightbox abierto, Esc solo vuelve a la guía: sin preventDefault
+  // el navegador además cerraría el <dialog>
+  if (e.key === 'Escape' && isLightboxOpen()) {
+    e.preventDefault();
+    closeLightbox(true);
+    return;
+  }
+  trapFocus(e);
+}
+
 // Con showModal() el resto de la página ya es inerte; esto además hace que
-// Tab circule dentro del diálogo en vez de salir a la barra del navegador
+// Tab circule dentro del diálogo (o del lightbox, si está abierto) en vez de
+// salir a la barra del navegador
 function trapFocus(e) {
   if (e.key !== 'Tab') return;
-  const items = [...dialog.querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null);
+  const root  = isLightboxOpen() ? lightbox : dialog;
+  const items = [...root.querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null);
   if (!items.length) return;
   const first = items[0];
   const last  = items[items.length - 1];
@@ -181,6 +215,8 @@ async function loadContent() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     contentEl.innerHTML = await res.text(); // archivo propio del sitio
     buildToc();
+    makeImagesZoomable();
+    schedulePrintImages();
   } catch {
     // Sin error en consola: se avisa dentro del diálogo y se permite reintentar
     loading = null;
@@ -320,4 +356,138 @@ function keepVisible(link) {
              link.offsetTop + link.offsetHeight > tocEl.scrollTop + tocEl.clientHeight) {
     tocEl.scrollTop = link.offsetTop - tocEl.clientHeight / 3;
   }
+}
+
+// ── Lightbox ───────────────────────────────────────────────────
+
+/** Las imágenes de las figuras se pueden ampliar también con el teclado */
+function makeImagesZoomable() {
+  contentEl.querySelectorAll('.guide-figure img').forEach((img) => {
+    img.tabIndex = 0;
+    img.setAttribute('role', 'button');
+    img.setAttribute('aria-label', `Ampliar imagen: ${img.alt}`);
+    img.title = 'Ampliar imagen';
+    img.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openLightbox(img);
+      }
+    });
+  });
+}
+
+function onContentClick(e) {
+  const img = e.target.closest('.guide-figure img');
+  if (img) openLightbox(img);
+}
+
+function isLightboxOpen() {
+  return Boolean(lightbox && !lightbox.hidden);
+}
+
+function createLightbox() {
+  const box = document.createElement('div');
+  box.className = 'guide-lightbox';
+  box.hidden = true;
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  box.innerHTML = `
+    <button type="button" class="icon-btn guide-lightbox-close" aria-label="Volver a la guía" title="Volver a la guía">${icon('x', 18)}</button>
+    <div class="guide-lightbox-body"></div>
+    <p class="guide-lightbox-caption"></p>`;
+  // Cualquier clic (en la imagen, el fondo o el botón) vuelve a la guía
+  box.addEventListener('click', () => closeLightbox(true));
+  dialog.appendChild(box);
+  return box;
+}
+
+/**
+ * Muestra la imagen a su tamaño real (sin el width/height de presentación),
+ * con sus marcadores numerados si los tiene. Solo se clona la imagen del
+ * tema activo: fuera de .guide-figure el CSS ya no oculta la otra.
+ */
+function openLightbox(img) {
+  if (!lightbox) lightbox = createLightbox();
+  const source = img.closest('.guide-shot') || img;
+  const clone  = source.cloneNode(true);
+  const copies = clone.matches('img') ? [clone] : [...clone.querySelectorAll('img')];
+  const shown  = source.matches('img') ? [source] : [...source.querySelectorAll('img')];
+  copies.forEach((copy, i) => {
+    if (getComputedStyle(shown[i]).display === 'none') {
+      copy.remove();
+      return;
+    }
+    ['width', 'height', 'loading', 'tabindex', 'role', 'aria-label', 'title']
+      .forEach((attr) => copy.removeAttribute(attr));
+  });
+
+  const caption = img.closest('.guide-figure')?.querySelector('figcaption');
+  lightbox.querySelector('.guide-lightbox-body').replaceChildren(clone);
+  lightbox.querySelector('.guide-lightbox-caption').innerHTML = caption ? caption.innerHTML : '';
+  lightbox.setAttribute('aria-label', img.alt);
+
+  zoomedImg = img;
+  setGuideInert(true);
+  lightbox.hidden = false;
+  lightbox.scrollTop = 0;
+  lightbox.querySelector('.guide-lightbox-close').focus();
+}
+
+/** @param {boolean} restoreFocus - devolver el foco a la imagen ampliada */
+function closeLightbox(restoreFocus) {
+  if (!isLightboxOpen()) return;
+  lightbox.hidden = true;
+  lightbox.querySelector('.guide-lightbox-body').replaceChildren();
+  setGuideInert(false);
+  if (restoreFocus) zoomedImg?.focus();
+  zoomedImg = null;
+}
+
+// Lo que queda debajo del lightbox no debe recibir foco ni clics
+function setGuideInert(on) {
+  [dialog.querySelector('.guide-header'), tocEl, contentEl].forEach((el) => { el.inert = on; });
+}
+
+// ── Impresión ──────────────────────────────────────────────────
+
+// La impresión usa las imágenes del tema claro. Con loading="lazy", las que
+// no se han visto (y todas en tema oscuro, donde están ocultas) no estarían
+// cargadas al imprimir, y el navegador no las espera: ni siquiera cargarlas
+// en 'beforeprint' llega a tiempo. Por eso se precargan en segundo plano al
+// abrir la guía; con el Service Worker salen de la caché (PRECACHE_ASSETS).
+function schedulePrintImages() {
+  const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
+  idle(loadPrintImages);
+}
+
+function loadPrintImages() {
+  contentEl.querySelectorAll('img[loading="lazy"]:not(.guide-img-dark)')
+    .forEach((img) => { img.loading = 'eager'; });
+}
+
+// ── Aviso de primera visita ────────────────────────────────────
+
+function scheduleFirstVisitHint() {
+  if (hintSeen()) return;
+  let tries = 0;
+  const attempt = () => {
+    if (dialog.open || hintSeen()) return;
+    if (document.querySelector('#toast.show') && ++tries <= HINT_TRIES) {
+      setTimeout(attempt, HINT_RETRY_MS);
+      return;
+    }
+    showToast('¿Primera vez aquí? Toca ? para ver la guía', 5000);
+    markHintSeen();
+  };
+  setTimeout(attempt, HINT_DELAY_MS);
+}
+
+// Sin almacenamiento no se puede recordar: se trata como ya visto para no
+// repetir el aviso en cada visita
+function hintSeen() {
+  try { return Boolean(localStorage.getItem(HINT_KEY)); } catch { return true; }
+}
+
+function markHintSeen() {
+  try { localStorage.setItem(HINT_KEY, '1'); } catch { /* sin persistencia */ }
 }
