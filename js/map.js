@@ -131,7 +131,7 @@ export function initMap(owmApiKey = '', geeTileUrl = '') {
           opacity: CLOUDS_OPACITY,
           maxZoom: MAX_ZOOM,
           zIndex: 2,
-          className: 'gis-fade',
+          className: 'gis-fade gis-clouds', // gis-clouds: tinte en tema claro (CSS)
           attribution: 'Nubes: <a href="https://openweathermap.org">OpenWeatherMap</a>',
           errorTileUrl: '',
         }
@@ -735,6 +735,8 @@ function buildLayerSwitcher({ mapBases, lightPollutionLayer, cloudsLayer, satell
 
         currentBase = id;
         setActive(groupBase, btn);
+        // Sobre el satélite las nubes quedan blancas, sin el tinte del tema claro
+        map.getContainer().classList.toggle('base-satellite', id === 'satellite');
 
       } else {
         // Overlay: pulsar el activo lo apaga (queda sin overlay)

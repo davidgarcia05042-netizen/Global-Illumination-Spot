@@ -29,6 +29,7 @@
   --glass-panel:    rgba(13, 27, 42, 0.97);
   --glass-switcher: rgba(13, 27, 42, 0.90);
   --backdrop:       rgba(3, 8, 15, 0.65);  /* fondo tras la guía de uso (RF13) */
+  --clouds-filter:  none;                  /* nubes blancas: ya contrastan con el mapa oscuro */
   --trans:          0.2s ease;
 }
 
@@ -59,6 +60,9 @@ html.light-theme {
   --glass-panel:    rgba(255, 255, 255, 0.97);
   --glass-switcher: rgba(255, 255, 255, 0.92);
   --backdrop:       rgba(13, 27, 42, 0.45);
+  /* Las teselas de OpenWeatherMap son blancas y se pierden sobre el gris
+     claro: se tiñen de azul pizarra para que la nubosidad se lea */
+  --clouds-filter:  brightness(0.32) sepia(1) hue-rotate(180deg) saturate(2.5);
 }
 
 /* Botón de tema: muestra el sol en oscuro (pasar a claro) y la luna en
@@ -453,8 +457,18 @@ html, body {
    de cada tile layer (className 'gis-fade'). Duración = FADE_MS en map.js */
 .gis-fade { transition: opacity 0.4s ease; }
 
+/* Capa de nubosidad: tinte según el tema. Sobre el satélite (oscuro)
+   se dejan blancas en ambos temas; map.js marca #map con .base-satellite.
+   El filtro acompaña al fundido de la base al cambiar de tema o de vista. */
+.gis-clouds {
+  filter: var(--clouds-filter);
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+.base-satellite .gis-clouds { filter: none; }
+
 @media (prefers-reduced-motion: reduce) {
-  .gis-fade { transition: none; }
+  .gis-fade,
+  .gis-clouds { transition: none; }
 }
 
 .leaflet-popup-tip { background: var(--bg-panel) !important; }
