@@ -402,6 +402,14 @@ html, body {
   .icon-btn.locating svg { animation: none; }
 }
 
+/* Fundido entre capas del mapa: map.js cambia la opacidad del contenedor
+   de cada tile layer (className 'gis-fade'). Duración = FADE_MS en map.js */
+.gis-fade { transition: opacity 0.4s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gis-fade { transition: none; }
+}
+
 .leaflet-popup-tip { background: var(--bg-panel) !important; }
 .leaflet-popup-close-button { color: var(--text-secondary) !important; }
 

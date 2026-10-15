@@ -28,6 +28,15 @@ const MAX_ZOOM       = 16;
 
 // Mismo breakpoint que el CSS: por debajo, el panel es un bottom-sheet
 const MOBILE_MQ = window.matchMedia('(max-width: 640px)');
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+// Opacidad objetivo de cada overlay (los fundidos llegan hasta aquí)
+const LIGHT_OPACITY  = 0.75;
+const CLOUDS_OPACITY = 0.65;
+
+// Fundido entre capas: debe coincidir con .gis-fade en styles.css
+const FADE_MS      = 400;
+const LOAD_WAIT_MS = 800; // tope de espera a las teselas antes de fundir
 
 let map                 = null;
 let lightPollutionLayer = null;
@@ -63,14 +72,15 @@ export function initMap(owmApiKey = '', geeTileUrl = '') {
   // Se compone de dos teselas: el relieve gris + una capa de referencia
   // con los nombres de lugares (el base solo no trae etiquetas).
   // Hay una variante oscura y una clara; se usa la del tema activo (RF09).
+  // className 'gis-fade': transición de opacidad para los fundidos (ver crossfadeBase)
   const canvasBase = (style) => L.layerGroup([
     L.tileLayer(
       `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_${style}_Gray_Base/MapServer/tile/{z}/{y}/{x}`,
-      { maxZoom: MAX_ZOOM, zIndex: 1, attribution: '&copy; <a href="https://www.esri.com">Esri</a>' }
+      { maxZoom: MAX_ZOOM, zIndex: 1, className: 'gis-fade', attribution: '&copy; <a href="https://www.esri.com">Esri</a>' }
     ),
     L.tileLayer(
       `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_${style}_Gray_Reference/MapServer/tile/{z}/{y}/{x}`,
-      { maxZoom: MAX_ZOOM, zIndex: 1 }
+      { maxZoom: MAX_ZOOM, zIndex: 1, className: 'gis-fade' }
     ),
   ]);
   const mapBases = { dark: canvasBase('Dark'), light: canvasBase('Light') };
@@ -86,9 +96,10 @@ export function initMap(owmApiKey = '', geeTileUrl = '') {
   // de versiones. Sin ella, la capa queda deshabilitada (ver más abajo).
   lightPollutionLayer = geeTileUrl
     ? L.tileLayer(geeTileUrl, {
-        opacity: 0.75,
+        opacity: LIGHT_OPACITY,
         maxZoom: MAX_ZOOM,
         zIndex: 2, // siempre sobre el mapa base, aunque este se re-añada
+        className: 'gis-fade',
         attribution: 'Contaminación lumínica: <a href="https://earthengine.google.com">Google Earth Engine / VIIRS</a>',
         errorTileUrl: '',
       })
@@ -108,9 +119,10 @@ export function initMap(owmApiKey = '', geeTileUrl = '') {
     ? L.tileLayer(
         `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${owmApiKey}`,
         {
-          opacity: 0.65,
+          opacity: CLOUDS_OPACITY,
           maxZoom: MAX_ZOOM,
           zIndex: 2,
+          className: 'gis-fade',
           attribution: 'Nubes: <a href="https://openweathermap.org">OpenWeatherMap</a>',
           errorTileUrl: '',
         }
@@ -125,12 +137,13 @@ export function initMap(owmApiKey = '', geeTileUrl = '') {
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     {
       maxZoom: MAX_ZOOM,
+      className: 'gis-fade',
       attribution: 'Satélite: &copy; <a href="https://www.esri.com">Esri</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
     }
   );
 
   // Widget de capas
-  buildLayerSwitcher(map, { mapBases, lightPollutionLayer, cloudsLayer, satelliteBase });
+  buildLayerSwitcher({ mapBases, lightPollutionLayer, cloudsLayer, satelliteBase });
 
   // Click en el mapa abre el panel para ese punto, con su nombre real
   map.on('click', async (e) => {
@@ -414,6 +427,118 @@ export function showToast(message, duration = 2500) {
   setTimeout(() => toast.classList.remove('show'), duration);
 }
 
+// ── Fundido entre capas ────────────────────────────────────────
+//
+// La animación la hace CSS: cada L.tileLayer lleva className 'gis-fade'
+// (transition: opacity en su contenedor) y setOpacity() de Leaflet escribe
+// la opacidad justo en ese contenedor. Así no hace falta un bucle de
+// requestAnimationFrame que cancelar. Con prefers-reduced-motion todo es
+// instantáneo, como antes.
+
+let desiredBase = null;          // base que debe quedar visible al terminar
+const baseLayers = new Set();    // todas las bases conocidas (para limpiar)
+const fadeTokens = new WeakMap(); // overlay → nº de la última orden de fundido
+
+/** setOpacity para un L.TileLayer o para cada capa de un L.LayerGroup */
+function setLayerOpacity(layer, v) {
+  if (layer instanceof L.LayerGroup) layer.eachLayer((l) => l.setOpacity?.(v));
+  else layer.setOpacity(v);
+}
+
+function setLayerZIndex(layer, z) {
+  if (layer instanceof L.LayerGroup) layer.eachLayer((l) => l.setZIndex?.(z));
+  else layer.setZIndex(z);
+}
+
+/** Resuelve cuando las teselas visibles cargaron, o a los maxMs como tope */
+function waitForLoad(layer, maxMs) {
+  const tiles   = layer instanceof L.LayerGroup ? layer.getLayers() : [layer];
+  const pending = tiles.filter((t) => t.isLoading?.());
+  if (!pending.length) return Promise.resolve();
+  return Promise.race([
+    Promise.all(pending.map((t) => new Promise((r) => t.once('load', r)))),
+    new Promise((r) => setTimeout(r, maxMs)),
+  ]);
+}
+
+// Dos frames: garantiza que el navegador pintó la opacidad inicial antes
+// de cambiarla, para que la transición CSS arranque
+const afterPaint = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+/**
+ * Funde de una capa base a otra: añade `to` invisible encima, espera sus
+ * teselas (máx. LOAD_WAIT_MS), la sube a opacidad 1 en FADE_MS y luego
+ * retira `from` (y cualquier otra base que haya quedado de un cambio
+ * anterior interrumpido). Si llega otro cambio a mitad, manda el último.
+ */
+function crossfadeBase(from, to) {
+  baseLayers.add(from).add(to);
+  desiredBase = to;
+  baseLayers.forEach((l) => setLayerZIndex(l, l === to ? 1 : 0));
+
+  if (REDUCED_MOTION.matches) {
+    setLayerOpacity(to, 1);
+    if (!map.hasLayer(to)) to.addTo(map);
+    removeStaleBases();
+    return;
+  }
+
+  // Si `to` sigue en el mapa (cambio de vuelta rápido) se funde desde su
+  // opacidad actual en vez de reiniciarla a 0
+  if (!map.hasLayer(to)) {
+    setLayerOpacity(to, 0);
+    to.addTo(map);
+  }
+  waitForLoad(to, LOAD_WAIT_MS)
+    .then(afterPaint)
+    .then(() => {
+      if (desiredBase !== to) return; // un cambio más reciente manda
+      setLayerOpacity(to, 1);
+      setTimeout(() => { if (desiredBase === to) removeStaleBases(); }, FADE_MS);
+    });
+}
+
+function removeStaleBases() {
+  baseLayers.forEach((l) => {
+    if (l !== desiredBase && map.hasLayer(l)) map.removeLayer(l);
+  });
+}
+
+/** Añade (si hace falta) un overlay y lo funde hasta su opacidad objetivo */
+function fadeInOverlay(layer, target) {
+  const token = (fadeTokens.get(layer) || 0) + 1;
+  fadeTokens.set(layer, token); // invalida un fade-out pendiente
+
+  if (REDUCED_MOTION.matches) {
+    setLayerOpacity(layer, target);
+    if (!map.hasLayer(layer)) layer.addTo(map);
+    return;
+  }
+  if (!map.hasLayer(layer)) {
+    setLayerOpacity(layer, 0);
+    layer.addTo(map);
+  }
+  afterPaint().then(() => {
+    if (fadeTokens.get(layer) === token) setLayerOpacity(layer, target);
+  });
+}
+
+/** Funde un overlay a 0 y lo retira del mapa al terminar */
+function fadeOutOverlay(layer) {
+  if (!map.hasLayer(layer)) return;
+  const token = (fadeTokens.get(layer) || 0) + 1;
+  fadeTokens.set(layer, token); // invalida un fade-in pendiente
+
+  if (REDUCED_MOTION.matches) {
+    map.removeLayer(layer);
+    return;
+  }
+  setLayerOpacity(layer, 0);
+  setTimeout(() => {
+    if (fadeTokens.get(layer) === token && map.hasLayer(layer)) map.removeLayer(layer);
+  }, FADE_MS);
+}
+
 // ── Widget selector de capas ───────────────────────────────────
 
 /**
@@ -424,7 +549,7 @@ export function showToast(message, duration = 2500) {
  *   - Overlay:  ninguno, contaminación lumínica (GEE) o nubosidad (OWM)
  * Los overlays se crean con zIndex 2, así quedan encima de cualquier base.
  */
-function buildLayerSwitcher(map, { mapBases, lightPollutionLayer, cloudsLayer, satelliteBase }) {
+function buildLayerSwitcher({ mapBases, lightPollutionLayer, cloudsLayer, satelliteBase }) {
 
   // La base del tema activo ya está añadida desde initMap(); se reutilizan
   // las mismas instancias aquí para no duplicar teselas.
@@ -437,15 +562,18 @@ function buildLayerSwitcher(map, { mapBases, lightPollutionLayer, cloudsLayer, s
   let currentBase    = 'map';                           // 'map' | 'satellite'
   let currentOverlay = lightAvailable ? 'light' : 'none'; // 'none' | 'light' | 'clouds'
 
+  // Registrar las bases para que crossfadeBase() pueda limpiar las que
+  // queden de un cambio interrumpido
+  [mapBases.dark, mapBases.light, satelliteBase].forEach((l) => baseLayers.add(l));
+  desiredBase = activeMapBase();
+
   // Cambio de tema (theme.js): si el usuario está en la vista "Mapa",
-  // reemplazar las teselas oscuras por las claras o viceversa. En
-  // satélite no se toca nada; al volver a "Mapa" se usará la del tema.
-  document.addEventListener('gis:theme-change', () => {
+  // fundir de las teselas oscuras a las claras o viceversa. En satélite
+  // no se toca nada; al volver a "Mapa" se usará la del tema.
+  document.addEventListener('gis:theme-change', (e) => {
     if (currentBase !== 'map') return;
-    Object.values(mapBases).forEach((base) => {
-      if (map.hasLayer(base)) map.removeLayer(base);
-    });
-    activeMapBase().addTo(map);
+    const previous = mapBases[e.detail.theme === 'light' ? 'dark' : 'light'];
+    crossfadeBase(previous, activeMapBase());
   });
 
   // RF01: la capa de contaminación lumínica es un compuesto histórico
@@ -522,16 +650,9 @@ function buildLayerSwitcher(map, { mapBases, lightPollutionLayer, cloudsLayer, s
       if (type === 'base') {
         if (id === currentBase) return;
 
-        if (id === 'satellite') {
-          // Quitar el mapa (grupo Esri Gray Canvas del tema), añadir satélite
-          if (map.hasLayer(activeMapBase())) map.removeLayer(activeMapBase());
-          satelliteBase.addTo(map);
-          satelliteBase.setZIndex(1);
-        } else {
-          // Quitar satélite, restaurar el mapa del tema activo
-          if (map.hasLayer(satelliteBase)) map.removeLayer(satelliteBase);
-          activeMapBase().addTo(map);
-        }
+        // Fundido entre el mapa (Esri Gray Canvas del tema) y el satélite
+        if (id === 'satellite') crossfadeBase(activeMapBase(), satelliteBase);
+        else                    crossfadeBase(satelliteBase, activeMapBase());
 
         currentBase = id;
         setActive(groupBase, btn);
@@ -540,17 +661,17 @@ function buildLayerSwitcher(map, { mapBases, lightPollutionLayer, cloudsLayer, s
         // Overlay: pulsar el activo lo apaga (queda sin overlay)
         const next = id === currentOverlay ? 'none' : id;
 
-        // Quitar overlay anterior
-        if (currentOverlay === 'light' && lightPollutionLayer && map.hasLayer(lightPollutionLayer)) map.removeLayer(lightPollutionLayer);
-        if (currentOverlay === 'clouds' && cloudsLayer && map.hasLayer(cloudsLayer)) map.removeLayer(cloudsLayer);
+        // Fundir y retirar el overlay anterior
+        if (currentOverlay === 'light' && lightPollutionLayer) fadeOutOverlay(lightPollutionLayer);
+        if (currentOverlay === 'clouds' && cloudsLayer)        fadeOutOverlay(cloudsLayer);
 
-        // Activar nuevo overlay
+        // Fundir el nuevo overlay hasta su opacidad objetivo
         if (next === 'light' && lightPollutionLayer) {
-          lightPollutionLayer.addTo(map);
+          fadeInOverlay(lightPollutionLayer, LIGHT_OPACITY);
           lightPollutionLayer.setZIndex(2);
           showLightDisclaimer();
         } else if (next === 'clouds' && cloudsLayer) {
-          cloudsLayer.addTo(map);
+          fadeInOverlay(cloudsLayer, CLOUDS_OPACITY);
           cloudsLayer.setZIndex(2);
         }
         // 'none' = no añadir nada
