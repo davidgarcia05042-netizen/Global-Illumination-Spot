@@ -46,8 +46,12 @@ export function initGuide() {
   fabBtn = createFloatingButton();
 
   dialog.querySelector('.guide-close').addEventListener('click', () => dialog.close());
-  // Clic en el fondo oscurecido (fuera de la caja del diálogo) también cierra
+  // Clic en el fondo oscurecido (fuera de la caja del diálogo) también cierra.
+  // El destino debe ser el propio <dialog>: los clics generados por teclado
+  // (Enter en un enlace o botón) llegan con coordenadas 0,0 y, sin esta
+  // condición, cerrarían la guía al navegar con teclado.
   dialog.addEventListener('click', (e) => {
+    if (e.target !== dialog) return;
     const r = dialog.getBoundingClientRect();
     const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
     if (!inside) dialog.close();
