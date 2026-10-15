@@ -5,69 +5,316 @@
   Cada <section> lleva id="ayuda-<slug>" (enlace directo: index.html#ayuda-<slug>)
   y su primer <h2> da el texto del índice.
 
-  PROVISIONAL (fase 1): solo la estructura. El contenido se redacta en la fase 2.
+  Describe lo que la app hace HOY: al cambiar un comportamiento, actualizar
+  aquí la sección correspondiente.
 -->
+
 <section id="ayuda-que-es">
   <h2>Qué es Global Illumination Spot</h2>
-  <p>Contenido en preparación.</p>
+  <p>
+    Es un mapa para encontrar buenos lugares donde mirar el cielo nocturno en Colombia.
+    Te dice qué tan oscuro es el cielo en cada punto y calcula, con el clima y la luna
+    de hoy, qué probabilidad tienes de tener una buena noche de observación.
+  </p>
+  <h3>Cómo leer esta guía</h3>
+  <ul>
+    <li>Usa el índice para saltar a lo que necesites. En el celular está arriba, como una fila de botones que puedes deslizar.</li>
+    <li>Cada sección se entiende sola: no hace falta leerlas en orden.</li>
+    <li>Puedes volver a abrir la guía cuando quieras con el botón <strong>?</strong>. En el celular está en el mapa, debajo de los botones <strong>+</strong> y <strong>−</strong>.</li>
+  </ul>
 </section>
 
 <section id="ayuda-mapa">
   <h2>Moverse por el mapa</h2>
-  <p>Contenido en preparación.</p>
+  <ol>
+    <li><strong>Para moverte</strong>, arrastra el mapa con el mouse o con un dedo.</li>
+    <li><strong>Para acercar o alejar</strong>, usa los botones <strong>+</strong> y <strong>−</strong> de la esquina, la rueda del mouse o, en el celular, pellizca la pantalla con dos dedos.</li>
+    <li><strong>Para analizar un lugar</strong>, toca o haz clic en cualquier punto del mapa. Se abre el panel de análisis con el nombre de la zona y su porcentaje de éxito.</li>
+  </ol>
+  <p>
+    También puedes usar el teclado: pulsa <strong>Tab</strong> hasta que el mapa quede
+    seleccionado y muévete con las flechas. Las teclas <strong>+</strong> y <strong>−</strong>
+    acercan y alejan.
+  </p>
 </section>
 
 <section id="ayuda-buscar">
   <h2>Buscar un lugar</h2>
-  <p>Contenido en preparación.</p>
+  <ol>
+    <li>Toca la barra <strong>Buscar ciudad o lugar...</strong> en la parte de arriba.</li>
+    <li>Escribe al menos 3 letras. Los resultados aparecen solos tras una pausa corta; también puedes pulsar <strong>Enter</strong> o la lupa.</li>
+    <li>Elige un resultado de la lista. El mapa vuela hasta ese lugar, lo marca con un <strong>pin rojo</strong> y abre su análisis.</li>
+  </ol>
+  <p>
+    La búsqueda empieza por Colombia. Si no encuentra nada allí, busca en el resto del mundo.
+  </p>
+  <p>
+    El pin rojo se quita al cerrar el panel o al elegir otro punto. Si cerraste el panel
+    sin querer, toca el pin para volver a abrirlo.
+  </p>
+  <h3>Búsquedas recientes</h3>
+  <ul>
+    <li>Al tocar la barra de búsqueda verás tus <strong>últimas 5 búsquedas</strong>. Toca una para volver a ese lugar al instante.</li>
+    <li>Para quitar una sola, toca la <strong>✕</strong> a su derecha.</li>
+    <li>Para quitarlas todas, toca <strong>Borrar historial</strong>.</li>
+  </ul>
+  <p>Tus búsquedas recientes se guardan solo en este dispositivo y navegador.</p>
 </section>
 
 <section id="ayuda-ubicacion">
   <h2>Mi ubicación</h2>
-  <p>Contenido en preparación.</p>
+  <ol>
+    <li>Toca el botón con la <strong>flecha</strong> que está junto a la barra de búsqueda.</li>
+    <li>La primera vez, el navegador te pedirá permiso para usar tu ubicación. Acepta.</li>
+    <li>El mapa se acerca a tu posición, la marca con un <strong>punto azul</strong> y abre el análisis de esa zona.</li>
+  </ol>
+  <ul>
+    <li>El <strong>círculo azul claro</strong> alrededor del punto muestra el margen de error: cuanto más pequeño, más precisa es la ubicación.</li>
+    <li>El punto se mueve contigo mientras tienes la app abierta.</li>
+    <li>Si te alejas por el mapa, vuelve a tocar el botón de la flecha para regresar a tu posición.</li>
+  </ul>
+  <h3>Si no das permiso</h3>
+  <p>
+    Verás el aviso <strong>"Permiso de ubicación denegado. Mostrando Villa de Leyva."</strong>
+    y el mapa irá a Villa de Leyva, en Boyacá. Lo mismo pasa si el teléfono no logra
+    encontrar tu posición. Todo lo demás funciona igual.
+  </p>
 </section>
 
 <section id="ayuda-capas">
   <h2>Capas del mapa</h2>
-  <p>Contenido en preparación.</p>
+  <p>
+    Abajo, en el centro del mapa, hay una barra con cuatro botones. El de la capa activa
+    se ve resaltado.
+  </p>
+  <h3>Mapa o Satélite</h3>
+  <ul>
+    <li><strong>Mapa</strong>: un mapa gris y sencillo con los nombres de los lugares. Cambia a claro u oscuro según el tema de la app.</li>
+    <li><strong>Satélite</strong>: fotos reales del terreno tomadas desde el espacio.</li>
+  </ul>
+  <p>Siempre hay una de las dos activa.</p>
+
+  <h3>Contaminación lumínica</h3>
+  <p>
+    Pinta encima de Colombia cuánta luz artificial se ve desde el espacio por la noche.
+    Así se lee:
+  </p>
+  <ul>
+    <li><strong>Negro o azul oscuro</strong>: cielo muy oscuro, ideal para observar.</li>
+    <li><strong>Turquesa o amarillo</strong>: contaminación moderada.</li>
+    <li><strong>Naranja, rojo o blanco</strong>: mucha contaminación, típica de las ciudades.</li>
+  </ul>
+  <p>
+    <strong>Importante:</strong> esta capa es un promedio de un año completo de imágenes
+    satelitales nocturnas (VIIRS, de la NASA y la NOAA). Muestra cómo es el lugar en
+    general, <strong>no lo que pasa esta noche</strong>. Por eso la app te lo recuerda con un aviso.
+  </p>
+
+  <h3>Nubosidad</h3>
+  <p>Muestra las nubes que hay ahora mismo sobre el mapa.</p>
+
+  <h3>Cómo usar estas dos capas</h3>
+  <ul>
+    <li>Solo puede haber una encendida a la vez: <strong>Contaminación</strong> o <strong>Nubosidad</strong>.</li>
+    <li>Para apagar la que está activa, vuelve a tocar su botón.</li>
+    <li>Si un botón aparece <strong>gris</strong>, ese servicio no está disponible en este momento y no se puede activar. El resto del mapa funciona normal.</li>
+  </ul>
 </section>
 
 <section id="ayuda-sitios">
   <h2>Sitios de astroturismo</h2>
-  <p>Contenido en preparación.</p>
+  <p>El mapa muestra sitios seleccionados para mirar el cielo en Colombia. Hay dos tipos de marcador:</p>
+  <ul>
+    <li><strong>Verde con estrella</strong>: sitio funcional de observación. El cielo es lo bastante oscuro para observar a simple vista o con telescopio.</li>
+    <li><strong>Naranja con telescopio</strong>: centro educativo o planetario. Está en la ciudad, así que el cielo no es bueno para observar, pero es ideal para aprender.</li>
+  </ul>
+  <ol>
+    <li>Pasa el mouse sobre un marcador para ver su nombre.</li>
+    <li>Tócalo o haz clic para abrir su análisis y su <strong>Ficha del sitio</strong> con más detalles.</li>
+  </ol>
 </section>
 
 <section id="ayuda-panel">
   <h2>El panel de análisis</h2>
-  <p>Contenido en preparación.</p>
+  <p>
+    Se abre al elegir cualquier punto: a la derecha en computador y desde abajo en el celular.
+    Mientras calcula verás <strong>"Calculando condiciones..."</strong>. Ciérralo con la <strong>✕</strong>.
+  </p>
+  <h3>El porcentaje de éxito</h3>
+  <p>El número grande del círculo resume qué tan buena será la observación ahora:</p>
+  <table>
+    <thead>
+      <tr><th>Porcentaje</th><th>Qué significa</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>70 % o más</td><td>Condiciones óptimas para observar</td></tr>
+      <tr><td>De 40 % a 69 %</td><td>Condiciones aceptables</td></tr>
+      <tr><td>Menos de 40 %</td><td>Condiciones desfavorables</td></tr>
+    </tbody>
+  </table>
+  <h3>Cómo se calcula</h3>
+  <p>Se combinan tres cosas, cada una con su peso:</p>
+  <ul>
+    <li><strong>Oscuridad del cielo (40 %)</strong>: según la escala de Bortle del lugar. Más oscuro, más puntos.</li>
+    <li><strong>Nubes (40 %)</strong>: según cuánto cielo está cubierto ahora. Menos nubes, más puntos.</li>
+    <li><strong>Luna (20 %)</strong>: según cuánta luna está iluminada hoy. Pesa menos: aun con luna llena se conserva parte de estos puntos.</li>
+  </ul>
+  <p>
+    Por ejemplo: un sitio con cielo muy oscuro (Bortle 1), sin nubes y en luna nueva llega
+    al 100 %. Un cielo totalmente cubierto resta 40 puntos; una luna llena, solo 14.
+  </p>
 </section>
 
 <section id="ayuda-condiciones">
   <h2>Condiciones actuales</h2>
-  <p>Contenido en preparación.</p>
+  <p>Debajo del porcentaje hay cuatro tarjetas. Mientras se cargan verás un brillo animado en lugar del dato.</p>
+  <ul>
+    <li><strong>Nubosidad</strong>: qué parte del cielo está cubierta de nubes en este momento.</li>
+    <li><strong>Fase lunar</strong>: la fase de la luna de hoy y qué porcentaje está iluminado. La app la calcula sola, sin necesidad de internet.</li>
+    <li><strong>Bortle</strong>: qué tan oscuro es el cielo del lugar, del 1 al 9.</li>
+    <li><strong>Temperatura</strong>: la temperatura actual en °C. Útil para saber cuánto abrigarte.</li>
+  </ul>
+  <h3>La escala de Bortle</h3>
+  <p>Mide la oscuridad del cielo nocturno. Mientras más bajo el número, más estrellas verás.</p>
+  <table>
+    <thead>
+      <tr><th>Nivel</th><th>Nombre</th><th>Qué se puede ver</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Cielo negro</td><td>Cielo excepcional; la Vía Láctea con muchísimo detalle.</td></tr>
+      <tr><td>2</td><td>Cielo negro</td><td>Cielo excelente; la Vía Láctea muy marcada.</td></tr>
+      <tr><td>3</td><td>Rural verdadero</td><td>La Vía Láctea se ve clara; algo de luz en el horizonte.</td></tr>
+      <tr><td>4</td><td>Rural/suburbano</td><td>La Vía Láctea todavía se ve, con menos detalle.</td></tr>
+      <tr><td>5</td><td>Suburbano</td><td>La Vía Láctea se ve débil o solo en lo más alto del cielo.</td></tr>
+      <tr><td>6</td><td>Suburbano brillante</td><td>La Vía Láctea casi no se distingue.</td></tr>
+      <tr><td>7</td><td>Transición</td><td>Cielo grisáceo; solo las estrellas más brillantes.</td></tr>
+      <tr><td>8</td><td>Urbano</td><td>Cielo de ciudad; pocas estrellas a simple vista.</td></tr>
+      <tr><td>9</td><td>Urbano intenso</td><td>Solo la Luna, los planetas y unas pocas estrellas.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    <strong>Ojo:</strong> en los sitios del catálogo, el Bortle viene de datos del propio sitio.
+    En cualquier otro punto del mapa es solo una <strong>estimación</strong>. Si no hay datos para
+    ese punto, la app usa el valor intermedio 5. Tómalo como referencia, no como una medición.
+  </p>
 </section>
 
 <section id="ayuda-simulador">
   <h2>Simulador "¿Y si...?"</h2>
-  <p>Contenido en preparación.</p>
+  <p>
+    Sirve para responder preguntas como: <em>"¿y si mañana no hay nubes?"</em> o
+    <em>"¿y si voy a un sitio más oscuro?"</em>. Está en el panel, debajo de las condiciones actuales.
+  </p>
+  <ol>
+    <li>Cuando termina el análisis, los tres controles toman los valores reales de ese lugar.</li>
+    <li>
+      Mueve cualquiera de ellos:
+      <ul>
+        <li><strong>Nubosidad simulada</strong>: de 0 % a 100 % de cielo cubierto.</li>
+        <li><strong>Contaminación lumínica</strong>: de Bortle 1 a Bortle 9.</li>
+        <li><strong>Iluminación lunar</strong>: de 0 % (luna nueva) a 100 % (luna llena).</li>
+      </ul>
+    </li>
+    <li>El <strong>Resultado simulado</strong> cambia al instante, en verde, ámbar o rojo con los mismos rangos del porcentaje de éxito.</li>
+  </ol>
+  <p>
+    El simulador no cambia el porcentaje principal: ese siempre muestra las condiciones reales.
+    Con el teclado, pasa de un control a otro con <strong>Tab</strong> y ajústalo con las flechas.
+  </p>
 </section>
 
 <section id="ayuda-ficha">
   <h2>Ficha del sitio</h2>
-  <p>Contenido en preparación.</p>
+  <p>Aparece al final del panel solo cuando abres uno de los sitios del catálogo (los marcadores verdes y naranjas). Muestra:</p>
+  <ul>
+    <li><strong>Escala Bortle</strong>: el nivel de oscuridad del sitio y su nombre.</li>
+    <li><strong>Altitud</strong>: en metros sobre el nivel del mar (m s.n.m.).</li>
+    <li><strong>Funcional</strong>: <strong>Sí</strong> si sirve para observar el cielo, o <strong>Solo educativo</strong> si es un centro para aprender.</li>
+    <li><strong>Acceso</strong>: qué tan fácil es llegar (Alta, Media o Baja).</li>
+    <li><strong>Observación</strong>: para qué es bueno el sitio. Por ejemplo, observación visual, fotografía o la Vía Láctea.</li>
+    <li><strong>Descripción</strong>: unas líneas sobre el lugar.</li>
+  </ul>
 </section>
 
 <section id="ayuda-tema">
   <h2>Tema claro / oscuro</h2>
-  <p>Contenido en preparación.</p>
+  <ul>
+    <li>Toca el botón del <strong>sol</strong> para pasar al tema claro, o el de la <strong>luna</strong> para volver al oscuro.</li>
+    <li>La primera vez, la app usa el mismo tema que tu celular o computador.</li>
+    <li>Cuando eliges uno con el botón, la app lo recuerda para la próxima visita.</li>
+    <li>Con el tema también cambia el mapa base (la capa <strong>Mapa</strong>); la vista Satélite no cambia.</li>
+  </ul>
 </section>
 
 <section id="ayuda-instalar">
   <h2>Instalar la app y uso sin conexión</h2>
-  <p>Contenido en preparación.</p>
+  <p>Puedes instalarla como una app más, con su propio ícono y sin la barra del navegador.</p>
+  <h3>Android y computador (Chrome o Edge)</h3>
+  <ol>
+    <li>Cuando el navegador lo permite, aparece en la parte de arriba un botón con una <strong>flecha hacia abajo</strong>.</li>
+    <li>Tócalo y confirma en la ventana que muestra el navegador.</li>
+  </ol>
+  <h3>iPhone y iPad (Safari)</h3>
+  <ol>
+    <li>Toca el botón <strong>Compartir</strong> de Safari.</li>
+    <li>Elige <strong>"Agregar a inicio"</strong>.</li>
+  </ol>
+  <p>La app te lo recuerda una sola vez con un aviso.</p>
+  <h3>Sin conexión</h3>
+  <p>Después de tu primera visita, sin internet <strong>sí funcionan</strong>:</p>
+  <ul>
+    <li>Abrir la app y esta guía.</li>
+    <li>Las zonas del mapa que ya habías visto.</li>
+    <li>Los sitios del catálogo y sus fichas.</li>
+    <li>La fase lunar y el simulador.</li>
+  </ul>
+  <p>Necesitan internet:</p>
+  <ul>
+    <li>El clima (nubosidad y temperatura), que sin conexión aparece como "N/D".</li>
+    <li>El buscador y los nombres de los lugares.</li>
+    <li>Las capas de satélite, contaminación y nubosidad en zonas que no habías visto.</li>
+  </ul>
 </section>
 
 <section id="ayuda-problemas">
   <h2>Preguntas frecuentes</h2>
-  <p>Contenido en preparación.</p>
+
+  <h3>La app no encuentra mi ubicación</h3>
+  <ul>
+    <li>Revisa que el GPS o la ubicación del dispositivo estén encendidos.</li>
+    <li>Revisa que el navegador tenga permiso de ubicación para este sitio. Suele estar en el ícono a la izquierda de la dirección web.</li>
+    <li>Dentro de un edificio puede tardar o fallar. Mientras tanto, el mapa muestra Villa de Leyva.</li>
+  </ul>
+
+  <h3>Dice "La capa ... no está disponible temporalmente"</h3>
+  <p>
+    El servicio que entrega esa capa no respondió. No es un problema de tu equipo.
+    El resto del mapa sigue funcionando; inténtalo de nuevo más tarde.
+  </p>
+
+  <h3>El clima aparece como "N/D"</h3>
+  <p>
+    No se pudo obtener el clima: sin internet o el servicio no respondió. Verás el aviso
+    "No se pudo obtener el clima en tiempo real" y el porcentaje será solo una estimación
+    aproximada. Vuelve a tocar el lugar cuando tengas conexión.
+  </p>
+
+  <h3>El Bortle siempre sale 5 fuera de los sitios</h3>
+  <p>
+    Fuera del catálogo el Bortle es una estimación, y cuando no hay datos se usa 5.
+    Para conocer la oscuridad real de una zona, activa la capa <strong>Contaminación</strong>.
+  </p>
+
+  <h3>La app no se actualiza o se ve como antes</h3>
+  <ul>
+    <li>En el navegador: recarga la página; si sigue igual, recarga una segunda vez.</li>
+    <li>Si la instalaste: ciérrala por completo y vuelve a abrirla.</li>
+  </ul>
+
+  <h3>No veo las animaciones</h3>
+  <p>
+    Si tu dispositivo tiene activada la opción de <strong>reducir el movimiento</strong>
+    (por ejemplo, en Windows: "Efectos de animación" desactivado), la app la respeta
+    y se muestra sin animaciones. Todo funciona igual.
+  </p>
 </section>
